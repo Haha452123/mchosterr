@@ -9,46 +9,57 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
 import {
-  getDatabase,
-  ref,
-  set,
-  push,
-  onValue,
-  get
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+  getFirestore,
+  collection,
+  doc,
+  addDoc,
+  setDoc,
+  getDocs,
+  onSnapshot,
+  query,
+  where,
+  orderBy
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-/*
- * Firebase configuration
- * Project: p9w-26379
- */
 
+/* =========================
+   FIREBASE CONFIG
+========================= */
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBHx2YW5mSVP-9q_qdvEN4soQ_gwLWe0Cg",
-  authDomain: "p9w-26379.firebaseapp.com",
-  databaseURL: "https://p9w-26379-default-rtdb.firebaseio.com",
-  projectId: "p9w-26379",
-  storageBucket: "p9w-26379.firebasestorage.app",
-  messagingSenderId: "509609712694",
-  appId: "1:509609712694:web:be1a6002b55a13524e8c97",
-  measurementId: "G-QXNEE9BFEX"
+  apiKey: "AIzaSyAew9fVw91DarhE9mUUIy2VZ2sCVxrAX44",
+  authDomain: "mchost-9516b.firebaseapp.com",
+  projectId: "mchost-9516b",
+  storageBucket: "mchost-9516b.firebasestorage.app",
+  messagingSenderId: "692774609042",
+  appId: "1:692774609042:web:dd447dc87803450d22864b",
+  measurementId: "G-ED4W6V8CNT"
 };
 
+
+/* =========================
+   INITIALIZE FIREBASE
+========================= */
+
 const app = initializeApp(firebaseConfig);
+
 const auth = getAuth(app);
-const db = getDatabase(app);
+const db = getFirestore(app);
 
 const $ = id => document.getElementById(id);
 
 let registerMode = false;
 let currentServerId = null;
 let stopServerListener = null;
+let stopServersListener = null;
+
 
 /* =========================
    AUTH
 ========================= */
 
 $("toggleAuth").onclick = () => {
+
   registerMode = !registerMode;
 
   $("authTitle").textContent =
@@ -65,7 +76,9 @@ $("toggleAuth").onclick = () => {
   $("authMsg").textContent = "";
 };
 
+
 $("authForm").onsubmit = async e => {
+
   e.preventDefault();
 
   $("authMsg").textContent = "";
@@ -74,13 +87,17 @@ $("authForm").onsubmit = async e => {
   const password = $("password").value;
 
   try {
+
     if (registerMode) {
+
       await createUserWithEmailAndPassword(
         auth,
         email,
         password
       );
+
     } else {
+
       await signInWithEmailAndPassword(
         auth,
         email,
@@ -89,6 +106,7 @@ $("authForm").onsubmit = async e => {
     }
 
   } catch (err) {
+
     console.error("Firebase Auth error:", err);
 
     $("authMsg").textContent =
@@ -96,13 +114,19 @@ $("authForm").onsubmit = async e => {
   }
 };
 
+
 $("logout").onclick = async () => {
+
   try {
+
     await signOut(auth);
+
   } catch (err) {
+
     console.error("Logout error:", err);
   }
 };
+
 
 /* =========================
    AUTH STATE
@@ -111,8 +135,11 @@ $("logout").onclick = async () => {
 onAuthStateChanged(auth, user => {
 
   $("auth").classList.toggle("hidden", !!user);
+
   $("app").classList.toggle("hidden", !user);
+
   $("logout").classList.toggle("hidden", !user);
+
 
   if (user) {
 
@@ -124,87 +151,133 @@ onAuthStateChanged(auth, user => {
 
     $("who").textContent = "";
 
+    if (stopServersListener) {
+      stopServersListener();
+      stopServersListener = null;
+    }
+
     if (stopServerListener) {
       stopServerListener();
       stopServerListener = null;
     }
 
     currentServerId = null;
+
     $("servers").innerHTML = "";
+
     $("serverPanel").classList.add("hidden");
   }
 });
 
+
 /* =========================
-   SERVER LIST
+   WATCH SERVERS
 ========================= */
 
 function watchServers(uid) {
 
-  const r = ref(db, `servers/${uid}`);
+  if (stopServersListener) {
+    stopServersListener();
+  }
 
-  onValue(r, snap => {
+  const serversRef = collection(db, "servers");
 
-    const data = snap.val() || {};
-    const box = $("servers");
+  const q = query(
+    serversRef,
+    where("owner", "==", uid)
+  );
 
-    box.innerHTML = "";
+  stopServersListener = onSnapshot(
+    q,
+    snapshot => {
 
-    for (const [id, s] of Object.entries(data)) {
+      const box = $("servers");
 
-      const el = document.createElement("div");
+      box.innerHTML = "";
 
-      el.className = "card server";
+      snapshot.forEach(serverDoc => {
 
-      el.innerHTML = `
-        <div class="row between">
-          <h3></h3>
-          <span class="pill"></span>
-        </div>
+        const s = serverDoc.data();
 
-        <div class="muted address"></div>
+        const id = serverDoc.id;
 
-        <div class="muted version"></div>
-      `;
+        const el = document.createElement("div");
 
-      el.querySelector("h3").textContent =
-        s.name || id;
+        el.className = "card server";
 
-      el.querySelector(".pill").textContent =
-        s.status || "offline";
+        el.innerHTML = `
+          <div class="row between">
+            <h3></h3>
+            <span class="pill"></span>
+          </div>
 
-      el.querySelector(".address").textContent =
-        s.address || "Not online yet";
+          <div class="muted address"></div>
 
-      el.querySelector(".version").textContent =
-        `${s.version || ""} · ${s.ram || 1024} MB`;
+          <div class="muted version"></div>
+        `;
 
-      el.onclick = () => openServer(id, s);
+        el.querySelector("h3").textContent =
+          s.name || id;
 
-      box.appendChild(el);
-    }
+        el.querySelector(".pill").textContent =
+          s.status || "offline";
 
-    if (!Object.keys(data).length) {
+        el.querySelector(".address").textContent =
+          s.address || "Not online yet";
 
-      box.innerHTML = `
+        el.querySelector(".version").textContent =
+          `${s.version || ""} · ${s.ram || 1024} MB`;
+
+        el.onclick = () =>
+          openServer(id, s);
+
+        box.appendChild(el);
+      });
+
+
+      if (snapshot.empty) {
+
+        box.innerHTML = `
+          <div class="card">
+            <h3>No servers yet</h3>
+            <div class="muted">
+              Create one to get started.
+            </div>
+          </div>
+        `;
+      }
+
+    },
+
+    error => {
+
+      console.error(
+        "Firestore server listener error:",
+        error
+      );
+
+      $("servers").innerHTML = `
         <div class="card">
-          <h3>No servers yet</h3>
+          <h3>Could not load servers</h3>
           <div class="muted">
-            Create one to get started.
+            ${error.message}
           </div>
         </div>
       `;
     }
-  });
+  );
 }
+
 
 /* =========================
    CREATE SERVER
 ========================= */
 
 $("newServer").onclick = () => {
+
   $("createDialog").showModal();
 };
+
 
 $("createForm").onsubmit = async e => {
 
@@ -217,14 +290,10 @@ $("createForm").onsubmit = async e => {
   const user = auth.currentUser;
 
   if (!user) {
-    $("createDialog").close();
     return;
   }
 
   try {
-
-    const id =
-      push(ref(db, `servers/${user.uid}`)).key;
 
     const name =
       $("serverNameInput").value.trim();
@@ -235,27 +304,36 @@ $("createForm").onsubmit = async e => {
     const ram =
       Number($("ramInput").value);
 
-    await set(
-      ref(db, `servers/${user.uid}/${id}`),
-      {
-        name,
-        version,
-        ram,
-        status: "provisioning",
-        createdAt: Date.now(),
-        address: ""
-      }
-    );
 
-    await set(
-      ref(db, `jobs/${id}`),
+    /* Create server */
+
+    const serverRef =
+      await addDoc(
+        collection(db, "servers"),
+        {
+          owner: user.uid,
+          name,
+          version,
+          ram,
+          status: "provisioning",
+          createdAt: Date.now(),
+          address: ""
+        }
+      );
+
+
+    /* Create provisioning job */
+
+    await addDoc(
+      collection(db, "jobs"),
       {
         owner: user.uid,
-        serverId: id,
+        serverId: serverRef.id,
         type: "provision",
         createdAt: Date.now()
       }
     );
+
 
     $("createDialog").close();
 
@@ -263,7 +341,10 @@ $("createForm").onsubmit = async e => {
 
   } catch (err) {
 
-    console.error("Create server error:", err);
+    console.error(
+      "Create server error:",
+      err
+    );
 
     alert(
       "Could not create server: " +
@@ -271,6 +352,7 @@ $("createForm").onsubmit = async e => {
     );
   }
 };
+
 
 /* =========================
    OPEN SERVER
@@ -286,41 +368,63 @@ async function openServer(id, server) {
     server.name || id;
 
   $("serverAddress").textContent =
-    server.address || "Waiting for agent…";
+    server.address ||
+    "Waiting for agent…";
 
   $("serverStatus").textContent =
-    server.status || "offline";
+    server.status ||
+    "offline";
+
 
   if (stopServerListener) {
     stopServerListener();
   }
 
-  stopServerListener = onValue(
-    ref(
-      db,
-      `servers/${auth.currentUser.uid}/${id}`
-    ),
-    snap => {
 
-      const s = snap.val() || {};
+  const serverRef =
+    doc(db, "servers", id);
 
-      $("serverName").textContent =
-        s.name || id;
 
-      $("serverAddress").textContent =
-        s.address || "Waiting for agent…";
+  stopServerListener =
+    onSnapshot(
+      serverRef,
+      snap => {
 
-      $("serverStatus").textContent =
-        s.status || "offline";
+        if (!snap.exists()) {
+          return;
+        }
 
-      $("console").textContent =
-        s.console ||
-        "Waiting for the hosting agent…";
-    }
-  );
+        const s = snap.data();
+
+        $("serverName").textContent =
+          s.name || id;
+
+        $("serverAddress").textContent =
+          s.address ||
+          "Waiting for agent…";
+
+        $("serverStatus").textContent =
+          s.status ||
+          "offline";
+
+        $("console").textContent =
+          s.console ||
+          "Waiting for the hosting agent…";
+      },
+
+      error => {
+
+        console.error(
+          "Server listener error:",
+          error
+        );
+      }
+    );
+
 
   await refreshFiles();
 }
+
 
 /* =========================
    SERVER ACTIONS
@@ -332,19 +436,20 @@ document
 
     btn.onclick = async () => {
 
-      if (!currentServerId || !auth.currentUser) {
+      if (
+        !currentServerId ||
+        !auth.currentUser
+      ) {
         return;
       }
 
-      const type = btn.dataset.action;
+      const type =
+        btn.dataset.action;
 
       try {
 
-        const id =
-          push(ref(db, "jobs")).key;
-
-        await set(
-          ref(db, `jobs/${id}`),
+        await addDoc(
+          collection(db, "jobs"),
           {
             owner: auth.currentUser.uid,
             serverId: currentServerId,
@@ -368,32 +473,54 @@ document
     };
   });
 
+
 /* =========================
    FILES
 ========================= */
 
-$("refreshFiles").onclick = refreshFiles;
+$("refreshFiles").onclick =
+  refreshFiles;
+
 
 async function refreshFiles() {
 
-  if (!currentServerId || !auth.currentUser) {
+  if (
+    !currentServerId ||
+    !auth.currentUser
+  ) {
     return;
   }
 
+
   try {
 
-    const snap = await get(
-      ref(
-        db,
-        `serverFiles/${auth.currentUser.uid}/${currentServerId}`
-      )
-    );
+    const filesQuery =
+      query(
+        collection(db, "serverFiles"),
+        where(
+          "owner",
+          "==",
+          auth.currentUser.uid
+        ),
+        where(
+          "serverId",
+          "==",
+          currentServerId
+        )
+      );
 
-    const files = snap.val() || {};
+
+    const snapshot =
+      await getDocs(filesQuery);
+
 
     $("files").innerHTML = "";
 
-    for (const [path, info] of Object.entries(files)) {
+
+    snapshot.forEach(fileDoc => {
+
+      const info =
+        fileDoc.data();
 
       const div =
         document.createElement("div");
@@ -401,13 +528,19 @@ async function refreshFiles() {
       div.className = "file";
 
       div.textContent =
-        `${path} — ${info.type || "file"}` +
-        `${info.size ? ` — ${info.size} bytes` : ""}`;
+        `${info.path || fileDoc.id}` +
+        ` — ${info.type || "file"}` +
+        `${
+          info.size
+            ? ` — ${info.size} bytes`
+            : ""
+        }`;
 
       $("files").appendChild(div);
-    }
+    });
 
-    if (!Object.keys(files).length) {
+
+    if (snapshot.empty) {
 
       $("files").innerHTML =
         '<div class="muted">' +
