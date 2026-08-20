@@ -22,15 +22,16 @@ import {
  * Project: p9w-26379
  */
 
+
 const firebaseConfig = {
-  apiKey: "AIzaSyAcQu7U91BAoVuVdCzFrVfqvzGK7iyJnjA",
+  apiKey: "AIzaSyBHx2YW5mSVP-9q_qdvEN4soQ_gwLWe0Cg",
   authDomain: "p9w-26379.firebaseapp.com",
   databaseURL: "https://p9w-26379-default-rtdb.firebaseio.com",
   projectId: "p9w-26379",
   storageBucket: "p9w-26379.firebasestorage.app",
   messagingSenderId: "509609712694",
-  appId: "1:509609712694:web:53cbb69a47860dd94e8c97",
-  measurementId: "G-Y25DSCRQXH"
+  appId: "1:509609712694:web:be1a6002b55a13524e8c97",
+  measurementId: "G-QXNEE9BFEX"
 };
 
 const app = initializeApp(firebaseConfig);
