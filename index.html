@@ -2,91 +2,370 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <title>LocalNode Server Hosting</title>
+
   <link rel="stylesheet" href="./style.css">
+
+  <link rel="icon" href="data:,">
 </head>
+
 <body>
-  <main class="wrap">
-    <header class="top">
-      <div>
-        <div class="brand">LocalNode</div>
-        <div class="muted">Minecraft Server Hosting</div>
-      </div>
-      <button id="logout" class="secondary hidden">Log out</button>
-    </header>
 
-    <section id="auth" class="card auth">
-      <h1 id="authTitle">Sign in</h1>
-      <p class="muted">Manage your Minecraft servers from your browser.</p>
-      <form id="authForm">
-        <input id="email" type="email" placeholder="Email" required>
-        <input id="password" type="password" placeholder="Password" minlength="6" required>
-        <button id="authSubmit" type="submit">Sign in</button>
-      </form>
-      <button id="toggleAuth" class="linkbtn">Need an account? Register</button>
-      <div id="authMsg" class="msg"></div>
-    </section>
+<main class="wrap">
 
-    <section id="app" class="hidden">
-      <div class="row between">
-        <div>
-          <h1>Dashboard</h1>
-          <div id="who" class="muted"></div>
-        </div>
-        <button id="newServer">+ Create server</button>
-      </div>
+  <!-- HEADER -->
+  <header class="top">
 
-      <div id="servers" class="grid"></div>
+    <div>
+      <div class="brand">LocalNode</div>
+      <div class="muted">Minecraft Server Hosting</div>
+    </div>
 
-      <section id="serverPanel" class="card hidden">
-        <div class="row between">
-          <div>
-            <h2 id="serverName">Server</h2>
-            <div id="serverAddress" class="muted"></div>
-          </div>
-          <span id="serverStatus" class="pill">offline</span>
-        </div>
+    <button
+      id="logout"
+      class="secondary hidden"
+      type="button"
+    >
+      Log out
+    </button>
 
-        <div class="actions">
-          <button data-action="start">Start</button>
-          <button data-action="restart">Restart</button>
-          <button data-action="stop" class="danger">Stop</button>
-        </div>
+  </header>
 
-        <h3>Console</h3>
-        <pre id="console">Waiting for the hosting agent…</pre>
 
-        <h3>Files</h3>
-        <div class="filebar">
-          <input id="filePath" placeholder="plugins/example.jar or server.properties">
-          <button id="refreshFiles" class="secondary">Refresh</button>
-        </div>
-        <div id="files" class="files"></div>
-      </section>
-    </section>
-  </main>
+  <!-- AUTH -->
+  <section id="auth" class="card auth">
 
-  <dialog id="createDialog">
-    <form method="dialog" id="createForm" class="dialog">
-      <h2>Create Minecraft server</h2>
-      <input id="serverNameInput" placeholder="Server name" maxlength="32" required>
-      <select id="versionInput">
-        <option value="1.21.11">1.21.11</option>
-        <option value="1.21.10">1.21.10</option>
-      </select>
-      <select id="ramInput">
-        <option value="1024">1 GB RAM</option>
-        <option value="2048">2 GB RAM</option>
-        <option value="4096">4 GB RAM</option>
-      </select>
-      <div class="row end">
-        <button value="cancel" class="secondary">Cancel</button>
-        <button value="default">Create</button>
-      </div>
+    <h1 id="authTitle">Sign in</h1>
+
+    <p class="muted">
+      Manage your Minecraft servers from your browser.
+    </p>
+
+    <form id="authForm">
+
+      <input
+        id="email"
+        type="email"
+        placeholder="Email"
+        autocomplete="email"
+        required
+      >
+
+      <input
+        id="password"
+        type="password"
+        placeholder="Password"
+        minlength="6"
+        autocomplete="current-password"
+        required
+      >
+
+      <button id="authSubmit" type="submit">
+        Sign in
+      </button>
+
     </form>
-  </dialog>
 
-  <script type="module" src="./app.js"></script>
+    <button
+      id="toggleAuth"
+      class="linkbtn"
+      type="button"
+    >
+      Need an account? Register
+    </button>
+
+    <div id="authMsg" class="msg"></div>
+
+  </section>
+
+
+  <!-- APP -->
+  <section id="app" class="hidden">
+
+    <!-- DASHBOARD -->
+    <div class="row between">
+
+      <div>
+        <h1>Dashboard</h1>
+        <div id="who" class="muted"></div>
+      </div>
+
+      <button id="newServer" type="button">
+        + Create server
+      </button>
+
+    </div>
+
+
+    <!-- RESOURCES -->
+    <section class="card">
+
+      <h2>Hosting Resources</h2>
+
+      <div class="muted">
+        Your current hosting allowance
+      </div>
+
+      <br>
+
+      <!-- RAM -->
+
+      <div>
+        <strong>RAM</strong>
+
+        <div
+          id="ramUsage"
+          class="resource-value"
+        >
+          0 GB / 3 GB
+        </div>
+
+        <div class="progress">
+          <div
+            id="ramProgress"
+            class="progress-bar"
+            style="width:0%"
+          ></div>
+        </div>
+      </div>
+
+      <br>
+
+      <!-- SERVERS -->
+
+      <div>
+        <strong>Online Servers</strong>
+
+        <div
+          id="serverUsage"
+          class="resource-value"
+        >
+          0 / 3
+        </div>
+
+        <div class="progress">
+          <div
+            id="serverProgress"
+            class="progress-bar"
+            style="width:0%"
+          ></div>
+        </div>
+      </div>
+
+      <br>
+
+      <!-- PURCHASE -->
+
+      <div class="purchase-actions">
+
+        <button
+          id="purchaseRam"
+          type="button"
+        >
+          Purchase +4 GB RAM
+        </button>
+
+        <button
+          id="testPurchase"
+          class="secondary"
+          type="button"
+        >
+          🧪 Test +4 GB
+        </button>
+
+      </div>
+
+      <div
+        id="purchaseMsg"
+        class="msg"
+      ></div>
+
+    </section>
+
+
+    <!-- SERVER LIST -->
+
+    <div id="servers" class="grid"></div>
+
+
+    <!-- SERVER PANEL -->
+
+    <section
+      id="serverPanel"
+      class="card hidden"
+    >
+
+      <div class="row between">
+
+        <div>
+
+          <h2 id="serverName">
+            Server
+          </h2>
+
+          <div
+            id="serverAddress"
+            class="muted"
+          >
+            Waiting for agent…
+          </div>
+
+        </div>
+
+        <span
+          id="serverStatus"
+          class="pill"
+        >
+          offline
+        </span>
+
+      </div>
+
+
+      <!-- SERVER ACTIONS -->
+
+      <div class="actions">
+
+        <button
+          data-action="start"
+          type="button"
+        >
+          Start
+        </button>
+
+        <button
+          data-action="restart"
+          type="button"
+        >
+          Restart
+        </button>
+
+        <button
+          data-action="stop"
+          class="danger"
+          type="button"
+        >
+          Stop
+        </button>
+
+      </div>
+
+
+      <!-- CONSOLE -->
+
+      <h3>Console</h3>
+
+      <pre id="console">Waiting for the hosting agent…</pre>
+
+
+      <!-- FILES -->
+
+      <h3>Files</h3>
+
+      <div class="filebar">
+
+        <input
+          id="filePath"
+          placeholder="plugins/example.jar or server.properties"
+        >
+
+        <button
+          id="refreshFiles"
+          class="secondary"
+          type="button"
+        >
+          Refresh
+        </button>
+
+      </div>
+
+      <div id="files" class="files"></div>
+
+    </section>
+
+  </section>
+
+</main>
+
+
+<!-- CREATE SERVER -->
+
+<dialog id="createDialog">
+
+  <form
+    method="dialog"
+    id="createForm"
+    class="dialog"
+  >
+
+    <h2>Create Minecraft Server</h2>
+
+    <input
+      id="serverNameInput"
+      placeholder="Server name"
+      maxlength="32"
+      required
+    >
+
+    <select id="versionInput">
+
+      <option value="1.21.11">
+        1.21.11
+      </option>
+
+      <option value="1.21.10">
+        1.21.10
+      </option>
+
+    </select>
+
+    <select id="ramInput">
+
+      <option value="1024">
+        1 GB RAM
+      </option>
+
+      <option value="2048">
+        2 GB RAM
+      </option>
+
+      <option value="3072">
+        3 GB RAM
+      </option>
+
+    </select>
+
+    <div class="row end">
+
+      <button
+        id="cancelCreate"
+        value="cancel"
+        class="secondary"
+        type="button"
+      >
+        Cancel
+      </button>
+
+      <button
+        value="default"
+        type="submit"
+      >
+        Create
+      </button>
+
+    </div>
+
+  </form>
+
+</dialog>
+
+
+<script
+  type="module"
+  src="./app.js"
+></script>
+
 </body>
 </html>
