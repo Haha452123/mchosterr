@@ -1,27 +1,51 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
 
   <title>LocalNode Server Hosting</title>
 
-  <link rel="stylesheet" href="./style.css">
+  <link
+    rel="stylesheet"
+    href="./style.css"
+  >
 
-  <link rel="icon" href="data:,">
+  <link
+    rel="icon"
+    href="data:,"
+  >
 </head>
+
 
 <body>
 
 <main class="wrap">
 
-  <!-- HEADER -->
+
+  <!-- =====================================================
+       HEADER
+  ====================================================== -->
+
   <header class="top">
 
     <div>
-      <div class="brand">LocalNode</div>
-      <div class="muted">Minecraft Server Hosting</div>
+
+      <div class="brand">
+        LocalNode
+      </div>
+
+      <div class="muted">
+        Minecraft Server Hosting
+      </div>
+
     </div>
+
 
     <button
       id="logout"
@@ -34,14 +58,25 @@
   </header>
 
 
-  <!-- AUTH -->
-  <section id="auth" class="card auth">
 
-    <h1 id="authTitle">Sign in</h1>
+  <!-- =====================================================
+       LOGIN / REGISTER
+  ====================================================== -->
+
+  <section
+    id="auth"
+    class="card auth"
+  >
+
+    <h1 id="authTitle">
+      Sign in
+    </h1>
+
 
     <p class="muted">
       Manage your Minecraft servers from your browser.
     </p>
+
 
     <form id="authForm">
 
@@ -53,6 +88,7 @@
         required
       >
 
+
       <input
         id="password"
         type="password"
@@ -62,11 +98,16 @@
         required
       >
 
-      <button id="authSubmit" type="submit">
+
+      <button
+        id="authSubmit"
+        type="submit"
+      >
         Sign in
       </button>
 
     </form>
+
 
     <button
       id="toggleAuth"
@@ -76,126 +117,208 @@
       Need an account? Register
     </button>
 
-    <div id="authMsg" class="msg"></div>
+
+    <div
+      id="authMsg"
+      class="msg"
+      role="alert"
+    ></div>
 
   </section>
 
 
-  <!-- APP -->
-  <section id="app" class="hidden">
 
-    <!-- DASHBOARD -->
+  <!-- =====================================================
+       MAIN APPLICATION
+  ====================================================== -->
+
+  <section
+    id="app"
+    class="hidden"
+  >
+
+
+    <!-- =================================================
+         DASHBOARD HEADER
+    ================================================== -->
+
     <div class="row between">
 
       <div>
-        <h1>Dashboard</h1>
-        <div id="who" class="muted"></div>
+
+        <h1>
+          Dashboard
+        </h1>
+
+
+        <div
+          id="who"
+          class="muted"
+        ></div>
+
       </div>
 
-      <button id="newServer" type="button">
+
+      <button
+        id="newServer"
+        type="button"
+      >
         + Create server
       </button>
 
     </div>
 
 
-    <!-- RESOURCES -->
-    <section class="card">
 
-      <h2>Hosting Resources</h2>
+    <!-- =================================================
+         ACCOUNT RESOURCES
+    ================================================== -->
 
-      <div class="muted">
-        Your current hosting allowance
-      </div>
+    <section
+      class="card"
+      id="resources"
+    >
 
-      <br>
+      <div class="row between">
 
-      <!-- RAM -->
+        <div>
 
-      <div>
-        <strong>RAM</strong>
+          <h2>
+            Hosting
+          </h2>
 
-        <div
-          id="ramUsage"
-          class="resource-value"
-        >
-          0 GB / 3 GB
+          <div class="muted">
+            Your current resource limits
+          </div>
+
         </div>
 
-        <div class="progress">
+      </div>
+
+
+      <div class="resource-grid">
+
+
+        <!-- RAM -->
+
+        <div class="resource">
+
+          <div class="resource-title">
+            RAM
+          </div>
+
+
           <div
-            id="ramProgress"
-            class="progress-bar"
-            style="width:0%"
-          ></div>
-        </div>
-      </div>
+            id="ramUsage"
+            class="resource-value"
+          >
+            0 GB / 3 GB
+          </div>
 
-      <br>
 
-      <!-- SERVERS -->
+          <div class="progress">
 
-      <div>
-        <strong>Online Servers</strong>
+            <div
+              id="ramProgress"
+              class="progress-bar"
+              style="width:0%"
+            ></div>
 
-        <div
-          id="serverUsage"
-          class="resource-value"
-        >
-          0 / 3
+          </div>
+
         </div>
 
-        <div class="progress">
+
+
+        <!-- SERVERS -->
+
+        <div class="resource">
+
+          <div class="resource-title">
+            Online servers
+          </div>
+
+
           <div
-            id="serverProgress"
-            class="progress-bar"
-            style="width:0%"
-          ></div>
+            id="serverUsage"
+            class="resource-value"
+          >
+            0 / 3
+          </div>
+
+
+          <div class="progress">
+
+            <div
+              id="serverProgress"
+              class="progress-bar"
+              style="width:0%"
+            ></div>
+
+          </div>
+
         </div>
+
       </div>
 
-      <br>
 
-      <!-- PURCHASE -->
+      <!-- Test purchase lives here for testing.
+           It does NOT charge money. -->
 
-      <div class="purchase-actions">
-
-        <button
-          id="purchaseRam"
-          type="button"
-        >
-          Purchase +4 GB RAM
-        </button>
+      <div
+        class="purchase-test"
+        style="margin-top:16px;"
+      >
 
         <button
           id="testPurchase"
           class="secondary"
           type="button"
         >
-          🧪 Test +4 GB
+          🧪 Test purchase: unlock 4 GB
         </button>
 
+
+        <div
+          class="muted"
+          style="margin-top:6px;"
+        >
+          Testing only — no money is charged.
+        </div>
+
       </div>
+
 
       <div
         id="purchaseMsg"
         class="msg"
+        role="status"
       ></div>
 
     </section>
 
 
-    <!-- SERVER LIST -->
 
-    <div id="servers" class="grid"></div>
+    <!-- =================================================
+         SERVER LIST
+    ================================================== -->
+
+    <div
+      id="servers"
+      class="grid"
+    ></div>
 
 
-    <!-- SERVER PANEL -->
+
+    <!-- =================================================
+         SERVER PANEL
+    ================================================== -->
 
     <section
       id="serverPanel"
       class="card hidden"
     >
+
 
       <div class="row between">
 
@@ -205,6 +328,7 @@
             Server
           </h2>
 
+
           <div
             id="serverAddress"
             class="muted"
@@ -213,6 +337,7 @@
           </div>
 
         </div>
+
 
         <span
           id="serverStatus"
@@ -224,9 +349,11 @@
       </div>
 
 
-      <!-- SERVER ACTIONS -->
+
+      <!-- SERVER CONTROLS -->
 
       <div class="actions">
+
 
         <button
           data-action="start"
@@ -235,12 +362,14 @@
           Start
         </button>
 
+
         <button
           data-action="restart"
           type="button"
         >
           Restart
         </button>
+
 
         <button
           data-action="stop"
@@ -253,16 +382,24 @@
       </div>
 
 
+
       <!-- CONSOLE -->
 
-      <h3>Console</h3>
+      <h3>
+        Console
+      </h3>
+
 
       <pre id="console">Waiting for the hosting agent…</pre>
 
 
+
       <!-- FILES -->
 
-      <h3>Files</h3>
+      <h3>
+        Files
+      </h3>
+
 
       <div class="filebar">
 
@@ -270,6 +407,7 @@
           id="filePath"
           placeholder="plugins/example.jar or server.properties"
         >
+
 
         <button
           id="refreshFiles"
@@ -281,7 +419,11 @@
 
       </div>
 
-      <div id="files" class="files"></div>
+
+      <div
+        id="files"
+        class="files"
+      ></div>
 
     </section>
 
@@ -290,7 +432,10 @@
 </main>
 
 
-<!-- CREATE SERVER -->
+
+<!-- =======================================================
+     CREATE SERVER DIALOG
+======================================================== -->
 
 <dialog id="createDialog">
 
@@ -300,14 +445,42 @@
     class="dialog"
   >
 
-    <h2>Create Minecraft Server</h2>
+
+    <h2>
+      Create Minecraft server
+    </h2>
+
+
+
+    <!-- SERVER NAME -->
+
+    <label
+      for="serverNameInput"
+      class="muted"
+    >
+      Server name
+    </label>
+
 
     <input
       id="serverNameInput"
-      placeholder="Server name"
+      placeholder="My Minecraft Server"
       maxlength="32"
+      autocomplete="off"
       required
     >
+
+
+
+    <!-- VERSION -->
+
+    <label
+      for="versionInput"
+      class="muted"
+    >
+      Minecraft version
+    </label>
+
 
     <select id="versionInput">
 
@@ -315,11 +488,24 @@
         1.21.11
       </option>
 
+
       <option value="1.21.10">
         1.21.10
       </option>
 
     </select>
+
+
+
+    <!-- RAM -->
+
+    <label
+      for="ramInput"
+      class="muted"
+    >
+      Server RAM
+    </label>
+
 
     <select id="ramInput">
 
@@ -327,30 +513,95 @@
         1 GB RAM
       </option>
 
+
       <option value="2048">
         2 GB RAM
       </option>
+
 
       <option value="3072">
         3 GB RAM
       </option>
 
+
+      <!-- This option is intentionally restricted.
+           app.js handles the click/change prompt. -->
+
+      <option
+        value="4096"
+        id="ram4Option"
+      >
+        4 GB RAM — RESTRICTED
+      </option>
+
     </select>
 
-    <div class="row end">
+
+
+    <!-- 4 GB RESTRICTION MESSAGE -->
+
+    <div
+      id="ramRestriction"
+      class="card hidden"
+      style="margin-top:10px;"
+    >
+
+      <strong>
+        🔒 4 GB RAM is restricted
+      </strong>
+
+
+      <div
+        class="muted"
+        style="margin-top:5px;"
+      >
+        You need the 4 GB RAM upgrade to use this
+        option.
+      </div>
+
+
+      <button
+        id="purchaseRam"
+        type="button"
+        style="margin-top:10px;"
+      >
+        Unlock 4 GB — $3
+      </button>
+
+    </div>
+
+
+
+    <!-- PURCHASE MESSAGE -->
+
+    <div
+      id="purchaseMsg"
+      class="msg"
+      role="status"
+    ></div>
+
+
+
+    <!-- BUTTONS -->
+
+    <div
+      class="row end"
+      style="margin-top:18px;"
+    >
 
       <button
         id="cancelCreate"
-        value="cancel"
-        class="secondary"
         type="button"
+        class="secondary"
       >
         Cancel
       </button>
 
+
       <button
-        value="default"
+        id="createServerSubmit"
         type="submit"
+        value="default"
       >
         Create
       </button>
@@ -362,10 +613,17 @@
 </dialog>
 
 
+
+<!-- =======================================================
+     FIREBASE APPLICATION
+======================================================== -->
+
 <script
   type="module"
   src="./app.js"
 ></script>
 
+
 </body>
+
 </html>
