@@ -25,9 +25,9 @@ import {
   "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 
-/* =========================================================
+/* ============================================================
    FIREBASE
-   ========================================================= */
+   ============================================================ */
 
 const firebaseConfig = {
   apiKey: "AIzaSyAew9fVw91DarhE9mUUIy2VZ2sCVxrAX44",
@@ -39,548 +39,685 @@ const firebaseConfig = {
   measurementId: "G-ED4W6V8CNT"
 };
 
-const firebaseApp = initializeApp(firebaseConfig);
+const firebaseApp =
+  initializeApp(firebaseConfig);
 
-const auth = getAuth(firebaseApp);
-const db = getFirestore(firebaseApp);
+const auth =
+  getAuth(firebaseApp);
+
+const db =
+  getFirestore(firebaseApp);
 
 
-/* =========================================================
+/* ============================================================
    SETTINGS
-   ========================================================= */
+   ============================================================ */
 
-const HOSTNAME = "freemchosting.vexr.dev";
+const HOSTNAME =
+  "freemchosting.vexr.dev";
 
 const MAX_SERVERS = 3;
-const MAX_FREE_RAM = 3072;
+const FREE_RAM_LIMIT = 3072;
 
 
-/* =========================================================
-   HELPERS
-   ========================================================= */
+/* ============================================================
+   STATE
+   ============================================================ */
 
-const $ = id => document.getElementById(id);
-
-let registerMode = false;
 let currentServerId = null;
+
 let serverUnsubscribe = null;
 let serversUnsubscribe = null;
+let jobsUnsubscribe = null;
+
+let registerMode = false;
 
 
-/* =========================================================
-   AUTH MODE
-   ========================================================= */
+/* ============================================================
+   HELPERS
+   ============================================================ */
 
-$("toggleAuth").onclick = () => {
-
-  registerMode = !registerMode;
-
-  $("authTitle").textContent =
-    registerMode ? "Register" : "Sign in";
-
-  $("authSubmit").textContent =
-    registerMode ? "Create account" : "Sign in";
-
-  $("toggleAuth").textContent =
-    registerMode
-      ? "Already have an account? Sign in"
-      : "Need an account? Register";
-
-  $("authMsg").textContent = "";
-};
+function $(id) {
+  return document.getElementById(id);
+}
 
 
-/* =========================================================
-   AUTH
-   ========================================================= */
+function showMessage(
+  element,
+  message,
+  type = ""
+) {
 
-$("authForm").onsubmit = async e => {
+  if (!element) return;
 
-  e.preventDefault();
+  element.textContent = message;
 
-  $("authMsg").textContent = "";
+  element.className =
+    `msg ${type}`;
 
-  try {
-
-    const email =
-      $("email").value.trim();
-
-    const password =
-      $("password").value;
-
-    if (registerMode) {
-
-      await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-
-    } else {
-
-      await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-
-    }
-
-  } catch (err) {
-
-    console.error(err);
-
-    $("authMsg").textContent =
-      err.message.replace("Firebase: ", "");
-
-  }
-};
+}
 
 
-/* =========================================================
-   LOGOUT
-   ========================================================= */
+function escapeHtml(value) {
 
-$("logout").onclick = () => {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
-  signOut(auth);
-
-};
-
-
-/* =========================================================
-   AUTH STATE
-   ========================================================= */
-
-onAuthStateChanged(auth, async user => {
-
-  const loggedIn = !!user;
-
-  $("auth").classList.toggle(
-    "hidden",
-    loggedIn
-  );
-
-  $("app").classList.toggle(
-    "hidden",
-    !loggedIn
-  );
-
-  $("logout").classList.toggle(
-    "hidden",
-    !loggedIn
-  );
+}
 
 
-  if (!user) {
+/* ============================================================
+   STATUS DISPLAY
+   ============================================================ */
 
-    if (serversUnsubscribe) {
-      serversUnsubscribe();
-      serversUnsubscribe = null;
-    }
+function prettyStatus(status) {
 
-    if (serverUnsubscribe) {
-      serverUnsubscribe();
-      serverUnsubscribe = null;
-    }
+  switch (status) {
 
-    return;
-  }
+    case "provisioning":
+      return "Provisioning…";
 
+    case "starting":
+      return "Starting…";
 
-  $("who").textContent =
-    user.email || user.uid;
+    case "online":
+      return "Online";
 
-  await ensureUserProfile(user);
+    case "stopping":
+      return "Stopping…";
 
-  watchServers(user.uid);
+    case "restarting":
+      return "Restarting…";
 
-});
+    case "offline":
+      return "Offline";
 
+    case "error":
+      return "Error";
 
-/* =========================================================
-   USER PROFILE
-   ========================================================= */
+    case "pending":
+      return "Pending…";
 
-async function ensureUserProfile(user) {
-
-  const profileRef =
-    doc(db, "users", user.uid);
-
-  const snap =
-    await getDoc(profileRef);
-
-  if (!snap.exists()) {
-
-    await setDoc(profileRef, {
-
-      email: user.email || "",
-
-      maxServers: MAX_SERVERS,
-
-      ramLimit: MAX_FREE_RAM,
-
-      createdAt: Date.now()
-
-    });
+    default:
+      return status || "Offline";
 
   }
 
 }
 
 
-/* =========================================================
+function isPendingStatus(status) {
+
+  return [
+    "provisioning",
+    "starting",
+    "stopping",
+    "restarting",
+    "pending"
+  ].includes(status);
+
+}
+
+
+/* ============================================================
+   AUTH SWITCH
+   ============================================================ */
+
+$("toggleAuth")?.addEventListener(
+  "click",
+  () => {
+
+    registerMode =
+      !registerMode;
+
+    $("authTitle").textContent =
+      registerMode
+        ? "Register"
+        : "Sign in";
+
+    $("authSubmit").textContent =
+      registerMode
+        ? "Create account"
+        : "Sign in";
+
+    $("toggleAuth").textContent =
+      registerMode
+        ? "Already have an account? Sign in"
+        : "Need an account? Register";
+
+    showMessage(
+      $("authMsg"),
+      ""
+    );
+
+  }
+);
+
+
+/* ============================================================
+   AUTH
+   ============================================================ */
+
+$("authForm")?.addEventListener(
+  "submit",
+  async event => {
+
+    event.preventDefault();
+
+    const email =
+      $("email")
+        .value
+        .trim();
+
+    const password =
+      $("password")
+        .value;
+
+
+    try {
+
+      showMessage(
+        $("authMsg"),
+        "Please wait…"
+      );
+
+
+      if (registerMode) {
+
+        await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+      } else {
+
+        await signInWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+      }
+
+
+    } catch (error) {
+
+      console.error(
+        "Authentication error:",
+        error
+      );
+
+      showMessage(
+        $("authMsg"),
+        error.message
+          .replace("Firebase: ", ""),
+        "error"
+      );
+
+    }
+
+  }
+);
+
+
+/* ============================================================
+   LOGOUT
+   ============================================================ */
+
+$("logout")?.addEventListener(
+  "click",
+  async () => {
+
+    await signOut(auth);
+
+  }
+);
+
+
+/* ============================================================
+   AUTH STATE
+   ============================================================ */
+
+onAuthStateChanged(
+  auth,
+  async user => {
+
+    if (!user) {
+
+      $("auth")
+        ?.classList
+        .remove("hidden");
+
+      $("app")
+        ?.classList
+        .add("hidden");
+
+      $("logout")
+        ?.classList
+        .add("hidden");
+
+
+      if (serversUnsubscribe) {
+        serversUnsubscribe();
+        serversUnsubscribe = null;
+      }
+
+      if (serverUnsubscribe) {
+        serverUnsubscribe();
+        serverUnsubscribe = null;
+      }
+
+      if (jobsUnsubscribe) {
+        jobsUnsubscribe();
+        jobsUnsubscribe = null;
+      }
+
+      currentServerId = null;
+
+      return;
+    }
+
+
+    $("auth")
+      ?.classList
+      .add("hidden");
+
+    $("app")
+      ?.classList
+      .remove("hidden");
+
+    $("logout")
+      ?.classList
+      .remove("hidden");
+
+
+    $("who").textContent =
+      user.email ||
+      user.uid;
+
+
+    try {
+
+      await ensureUserProfile(user);
+
+      watchServers(user.uid);
+
+      watchUserJobs(user.uid);
+
+    } catch (error) {
+
+      console.error(
+        "Dashboard initialization:",
+        error
+      );
+
+    }
+
+  }
+);
+
+
+/* ============================================================
+   USER PROFILE
+   ============================================================ */
+
+async function ensureUserProfile(user) {
+
+  const ref =
+    doc(
+      db,
+      "users",
+      user.uid
+    );
+
+  const snap =
+    await getDoc(ref);
+
+
+  if (!snap.exists()) {
+
+    await setDoc(
+      ref,
+      {
+
+        email:
+          user.email || "",
+
+        maxServers:
+          MAX_SERVERS,
+
+        ramLimit:
+          FREE_RAM_LIMIT,
+
+        createdAt:
+          Date.now()
+
+      }
+    );
+
+  }
+
+}
+
+
+/* ============================================================
    WATCH SERVERS
-   ========================================================= */
+   ============================================================ */
 
 function watchServers(uid) {
 
   if (serversUnsubscribe) {
+
     serversUnsubscribe();
+
   }
 
-  const q = query(
-    collection(db, "servers"),
-    where("owner", "==", uid)
-  );
+
+  const q =
+    query(
+      collection(db, "servers"),
+      where(
+        "owner",
+        "==",
+        uid
+      )
+    );
+
 
   serversUnsubscribe =
-    onSnapshot(q, snapshot => {
+    onSnapshot(
+      q,
 
-      const box = $("servers");
+      snapshot => {
 
-      box.innerHTML = "";
-
-      const servers = [];
-
-      snapshot.forEach(snap => {
-
-        servers.push({
-          id: snap.id,
-          ...snap.data()
-        });
-
-      });
-
-
-      if (!servers.length) {
-
-        box.innerHTML = `
-          <div class="card">
-            <h3>No servers yet</h3>
-            <div class="muted">
-              Create one to get started.
-            </div>
-          </div>
-        `;
-
-        return;
-      }
-
-
-      for (const server of servers) {
-
-        const el =
-          document.createElement("div");
-
-        el.className =
-          "card server";
-
-        const status =
-          server.status || "offline";
-
-        el.innerHTML = `
-
-          <div class="row between">
-
-            <h3></h3>
-
-            <span class="pill">
-              ${escapeHtml(status)}
-            </span>
-
-          </div>
-
-          <div class="muted address"></div>
-
-          <div class="muted">
-            ${escapeHtml(server.version || "")}
-            ·
-            ${Number(server.ram || 0)} MB
-          </div>
-        `;
-
-
-        el.querySelector("h3")
-          .textContent =
-            server.name || server.id;
-
-
-        el.querySelector(".address")
-          .textContent =
-            server.address ||
-            "Not online yet";
-
-
-        el.onclick = () =>
-          openServer(
-            server.id,
-            server
+        const servers =
+          snapshot.docs.map(
+            item => ({
+              id: item.id,
+              ...item.data()
+            })
           );
 
 
-        box.appendChild(el);
+        renderServers(
+          servers
+        );
+
+
+        /*
+         * If the currently selected server
+         * disappeared, close its panel.
+         */
+
+        if (
+          currentServerId &&
+          !servers.some(
+            server =>
+              server.id ===
+              currentServerId
+          )
+        ) {
+
+          currentServerId =
+            null;
+
+          $("serverPanel")
+            ?.classList
+            .add("hidden");
+
+        }
+
+
+        /*
+         * Keep currently selected server
+         * updated immediately.
+         */
+
+        const selected =
+          servers.find(
+            server =>
+              server.id ===
+              currentServerId
+          );
+
+
+        if (selected) {
+
+          updateServerPanel(
+            selected
+          );
+
+        }
+
+      },
+
+      error => {
+
+        console.error(
+          "Server listener:",
+          error
+        );
+
+        showFirebaseError(
+          error
+        );
 
       }
-
-    });
+    );
 
 }
 
 
-/* =========================================================
-   CREATE SERVER DIALOG
-   ========================================================= */
+/* ============================================================
+   RENDER SERVER CARDS
+   ============================================================ */
 
-$("newServer").onclick = () => {
+function renderServers(
+  servers
+) {
 
-  $("ramNotice").textContent = "";
+  const box =
+    $("servers");
 
-  $("createDialog").showModal();
+  if (!box) return;
 
-};
+  box.innerHTML = "";
 
 
-$("ramInput").onchange = () => {
+  if (!servers.length) {
 
-  const ram =
-    Number($("ramInput").value);
+    box.innerHTML = `
+      <div class="card">
+        <h3>No servers yet</h3>
+        <div class="muted">
+          Create a server to get started.
+        </div>
+      </div>
+    `;
 
-  if (ram === 4096) {
-
-    $("ramNotice").textContent =
-      "4 GB RAM is restricted. A $3 purchase is required.";
-
-  } else {
-
-    $("ramNotice").textContent = "";
+    return;
 
   }
 
-};
+
+  for (const server of servers) {
+
+    const status =
+      server.status ||
+      "offline";
+
+    const card =
+      document.createElement(
+        "div"
+      );
 
 
-/* =========================================================
-   CREATE SERVER
-   ========================================================= */
-
-$("createForm").onsubmit = async e => {
-
-  e.preventDefault();
-
-  const user = auth.currentUser;
-
-  if (!user) return;
+    card.className =
+      "card server";
 
 
-  const name =
-    $("serverNameInput")
-      .value
-      .trim();
+    const title =
+      document.createElement(
+        "h3"
+      );
 
-  const version =
-    $("versionInput").value;
-
-  const ram =
-    Number($("ramInput").value);
+    title.textContent =
+      server.name ||
+      server.id;
 
 
-  if (!name) return;
+    const statusElement =
+      document.createElement(
+        "span"
+      );
+
+    statusElement.className =
+      "pill";
+
+    statusElement.textContent =
+      prettyStatus(status);
 
 
-  try {
+    const header =
+      document.createElement(
+        "div"
+      );
 
-    /* -------------------------------------------------------
-       4 GB TEST PURCHASE
-       ------------------------------------------------------- */
+    header.className =
+      "row between";
 
-    if (ram === 4096) {
+    header.append(
+      title,
+      statusElement
+    );
 
-      const answer =
-        confirm(
-          "4 GB RAM is restricted.\n\n" +
-          "This is a TEST purchase only.\n\n" +
-          "Pretend to purchase the $3 upgrade?"
+
+    const address =
+      document.createElement(
+        "div"
+      );
+
+    address.className =
+      "muted";
+
+    address.textContent =
+      server.address ||
+      (
+        isPendingStatus(status)
+          ? "Waiting for hosting agent…"
+          : "Not online"
+      );
+
+
+    const info =
+      document.createElement(
+        "div"
+      );
+
+    info.className =
+      "muted";
+
+    info.textContent =
+      `${server.version || ""} · ` +
+      `${Number(server.ram || 0)} MB`;
+
+
+    card.append(
+      header,
+      address,
+      info
+    );
+
+
+    card.addEventListener(
+      "click",
+      () => {
+
+        openServer(
+          server.id,
+          server
         );
 
-      if (!answer) return;
-
-
-      await addDoc(
-        collection(
-          db,
-          "ramPurchaseRequests"
-        ),
-        {
-
-          owner: user.uid,
-
-          email:
-            user.email || "",
-
-          ram: 4096,
-
-          amount: 3,
-
-          status: "test",
-
-          createdAt: Date.now()
-
-        }
-      );
-
-    }
-
-
-    /* -------------------------------------------------------
-       SERVER
-       ------------------------------------------------------- */
-
-    const serverRef =
-      doc(
-        collection(db, "servers")
-      );
-
-    await setDoc(
-      serverRef,
-      {
-
-        owner: user.uid,
-
-        name,
-
-        version,
-
-        ram,
-
-        status: "provisioning",
-
-        address: "",
-
-        port: 0,
-
-        createdAt: Date.now()
-
       }
     );
 
 
-    /* -------------------------------------------------------
-       JOB
-       ------------------------------------------------------- */
-
-    await addDoc(
-      collection(db, "jobs"),
-      {
-
-        owner: user.uid,
-
-        serverId:
-          serverRef.id,
-
-        type: "provision",
-
-        createdAt: Date.now(),
-
-        status: "queued"
-
-      }
-    );
-
-
-    $("createDialog").close();
-
-    $("serverNameInput").value = "";
-
-  } catch (err) {
-
-    console.error(
-      "Create server error:",
-      err
-    );
-
-    alert(
-      "Create server failed: " +
-      err.message
-    );
+    box.appendChild(card);
 
   }
 
-};
+}
 
 
-/* =========================================================
+/* ============================================================
    OPEN SERVER
-   ========================================================= */
+   ============================================================ */
 
 async function openServer(
-  id,
+  serverId,
   server
 ) {
 
-  currentServerId = id;
+  currentServerId =
+    serverId;
+
 
   $("serverPanel")
-    .classList
+    ?.classList
     .remove("hidden");
 
 
-  $("serverName").textContent =
-    server.name || id;
-
-  $("serverAddress").textContent =
-    server.address ||
-    "Waiting for agent…";
-
-  $("serverStatus").textContent =
-    server.status ||
-    "offline";
+  updateServerPanel(
+    server
+  );
 
 
   if (serverUnsubscribe) {
+
     serverUnsubscribe();
+
   }
 
 
   serverUnsubscribe =
     onSnapshot(
-      doc(db, "servers", id),
-      snap => {
+      doc(
+        db,
+        "servers",
+        serverId
+      ),
 
-        if (!snap.exists()) return;
+      snapshot => {
 
-        const s =
-          snap.data();
+        if (!snapshot.exists()) {
+
+          return;
+
+        }
 
 
-        $("serverName")
-          .textContent =
-            s.name || id;
+        updateServerPanel({
 
-        $("serverAddress")
-          .textContent =
-            s.address ||
-            "Waiting for agent…";
+          id:
+            snapshot.id,
 
-        $("serverStatus")
-          .textContent =
-            s.status ||
-            "offline";
+          ...snapshot.data()
 
-        $("console")
-          .textContent =
-            s.console ||
-            "Waiting for the hosting agent…";
+        });
+
+      },
+
+      error => {
+
+        console.error(
+          "Server listener:",
+          error
+        );
 
       }
     );
@@ -591,83 +728,783 @@ async function openServer(
 }
 
 
-/* =========================================================
-   START / STOP / RESTART
-   ========================================================= */
+/* ============================================================
+   UPDATE SERVER PANEL
+   ============================================================ */
 
-document
-  .querySelectorAll("[data-action]")
-  .forEach(button => {
+function updateServerPanel(
+  server
+) {
 
-    button.onclick = async () => {
-
-      const user =
-        auth.currentUser;
-
-      if (!user ||
-          !currentServerId) {
-
-        return;
-
-      }
+  const status =
+    server.status ||
+    "offline";
 
 
-      try {
+  $("serverName").textContent =
+    server.name ||
+    server.id;
 
-        await addDoc(
-          collection(db, "jobs"),
-          {
 
-            owner: user.uid,
+  /*
+   * Pending/provisioning fix:
+   *
+   * Don't show "Not online" while the
+   * agent is still working.
+   */
 
-            serverId:
-              currentServerId,
+  if (
+    server.address
+  ) {
 
-            type:
-              button.dataset.action,
+    $("serverAddress").textContent =
+      server.address;
 
-            createdAt:
-              Date.now(),
+  } else if (
+    isPendingStatus(status)
+  ) {
 
-            status:
-              "queued"
+    $("serverAddress").textContent =
+      "Waiting for hosting agent…";
 
-          }
+  } else {
+
+    $("serverAddress").textContent =
+      "Not online";
+
+  }
+
+
+  $("serverStatus").textContent =
+    prettyStatus(status);
+
+
+  $("console").textContent =
+    server.console ||
+    (
+      isPendingStatus(status)
+        ? "Waiting for the hosting agent…"
+        : "No console output yet."
+    );
+
+}
+
+
+/* ============================================================
+   JOB LISTENER
+   ============================================================ */
+
+/*
+ * This is the client-side pending fix.
+ *
+ * We watch the user's jobs and use them to make
+ * the UI understand that an operation is still
+ * happening even before the server document
+ * changes.
+ */
+
+function watchUserJobs(uid) {
+
+  if (jobsUnsubscribe) {
+
+    jobsUnsubscribe();
+
+  }
+
+
+  const q =
+    query(
+      collection(db, "jobs"),
+      where(
+        "owner",
+        "==",
+        uid
+      )
+    );
+
+
+  jobsUnsubscribe =
+    onSnapshot(
+      q,
+
+      snapshot => {
+
+        const jobs =
+          snapshot.docs.map(
+            item => ({
+              id: item.id,
+              ...item.data()
+            })
+          );
+
+
+        updatePendingUI(
+          jobs
         );
 
-      } catch (err) {
+      },
 
-        console.error(err);
+      error => {
 
-        alert(
-          "Firebase denied this operation."
+        console.error(
+          "Job listener:",
+          error
         );
 
       }
+    );
 
-    };
-
-  });
+}
 
 
-/* =========================================================
-   COMMAND LINE
-   ========================================================= */
+/* ============================================================
+   PENDING UI
+   ============================================================ */
 
-$("commandForm").onsubmit =
-  async e => {
+function updatePendingUI(
+  jobs
+) {
 
-    e.preventDefault();
+  if (!currentServerId) {
+    return;
+  }
+
+
+  /*
+   * Find the newest active job
+   * for the selected server.
+   */
+
+  const activeJobs =
+    jobs
+      .filter(
+        job =>
+          job.serverId ===
+          currentServerId
+      )
+      .filter(
+        job =>
+          job.status === "queued" ||
+          job.status === "processing"
+      )
+      .sort(
+        (a, b) =>
+          Number(
+            b.createdAt || 0
+          ) -
+          Number(
+            a.createdAt || 0
+          )
+      );
+
+
+  if (!activeJobs.length) {
+
+    return;
+
+  }
+
+
+  const job =
+    activeJobs[0];
+
+
+  let status =
+    "Pending…";
+
+
+  if (
+    job.type ===
+    "provision"
+  ) {
+
+    status =
+      job.status ===
+      "processing"
+        ? "Provisioning…"
+        : "Waiting for agent…";
+
+  }
+
+  else if (
+    job.type ===
+    "start"
+  ) {
+
+    status =
+      job.status ===
+      "processing"
+        ? "Starting…"
+        : "Start queued…";
+
+  }
+
+  else if (
+    job.type ===
+    "restart"
+  ) {
+
+    status =
+      job.status ===
+      "processing"
+        ? "Restarting…"
+        : "Restart queued…";
+
+  }
+
+  else if (
+    job.type ===
+    "stop"
+  ) {
+
+    status =
+      job.status ===
+      "processing"
+        ? "Stopping…"
+        : "Stop queued…";
+
+  }
+
+
+  $("serverStatus").textContent =
+    status;
+
+
+  if (
+    job.type !==
+    "command"
+  ) {
+
+    $("serverAddress").textContent =
+      "Waiting for hosting agent…";
+
+  }
+
+}
+
+
+/* ============================================================
+   CREATE SERVER
+   ============================================================ */
+
+$("newServer")?.addEventListener(
+  "click",
+  () => {
+
+    $("ramNotice").textContent = "";
+
+    $("createDialog")
+      ?.showModal();
+
+  }
+);
+
+
+/* ============================================================
+   RAM SELECTION
+   ============================================================ */
+
+$("ramInput")?.addEventListener(
+  "change",
+  () => {
+
+    const ram =
+      Number(
+        $("ramInput").value
+      );
+
+
+    if (ram === 4096) {
+
+      showMessage(
+        $("ramNotice"),
+        "4 GB RAM is restricted. " +
+        "A $3 purchase is required.",
+        "warning"
+      );
+
+    } else {
+
+      showMessage(
+        $("ramNotice"),
+        ""
+      );
+
+    }
+
+  }
+);
+
+
+/* ============================================================
+   CREATE SERVER
+   ============================================================ */
+
+$("createForm")?.addEventListener(
+  "submit",
+  async event => {
+
+    event.preventDefault();
+
 
     const user =
       auth.currentUser;
 
-    if (!user ||
-        !currentServerId) {
 
-      $("commandMsg")
-        .textContent =
-          "Select a server first.";
+    if (!user) {
+
+      return;
+
+    }
+
+
+    const name =
+      $("serverNameInput")
+        .value
+        .trim();
+
+    const version =
+      $("versionInput")
+        .value;
+
+    const ram =
+      Number(
+        $("ramInput")
+          .value
+      );
+
+
+    if (!name) {
+
+      return;
+
+    }
+
+
+    try {
+
+      /*
+       * Check profile limits before creating.
+       */
+
+      const profileSnap =
+        await getDoc(
+          doc(
+            db,
+            "users",
+            user.uid
+          )
+        );
+
+
+      const profile =
+        profileSnap.exists()
+          ? profileSnap.data()
+          : {
+              maxServers:
+                MAX_SERVERS,
+
+              ramLimit:
+                FREE_RAM_LIMIT
+            };
+
+
+      const serverSnap =
+        await getDocs(
+          query(
+            collection(db, "servers"),
+            where(
+              "owner",
+              "==",
+              user.uid
+            )
+          )
+        );
+
+
+      const servers =
+        serverSnap.docs.map(
+          item => item.data()
+        );
+
+
+      const activeServers =
+        servers.filter(
+          server =>
+            server.status ===
+              "online" ||
+            server.status ===
+              "starting" ||
+            server.status ===
+              "provisioning" ||
+            server.status ===
+              "restarting"
+        );
+
+
+      if (
+        activeServers.length >=
+        Number(
+          profile.maxServers ||
+          MAX_SERVERS
+        )
+      ) {
+
+        throw new Error(
+          `Server limit reached ` +
+          `(${profile.maxServers || MAX_SERVERS}).`
+        );
+
+      }
+
+
+      const usedRam =
+        activeServers.reduce(
+          (
+            total,
+            server
+          ) =>
+            total +
+            Number(
+              server.ram || 0
+            ),
+          0
+        );
+
+
+      /*
+       * 4 GB test purchase.
+       */
+
+      if (ram === 4096) {
+
+        const confirmed =
+          confirm(
+            "4 GB RAM is restricted.\n\n" +
+            "TEST PURCHASE ONLY.\n\n" +
+            "Pretend to purchase the $3 upgrade?"
+          );
+
+
+        if (!confirmed) {
+
+          return;
+
+        }
+
+
+        await addDoc(
+          collection(
+            db,
+            "ramPurchaseRequests"
+          ),
+          {
+
+            owner:
+              user.uid,
+
+            email:
+              user.email || "",
+
+            ram: 4096,
+
+            amount: 3,
+
+            status: "test",
+
+            createdAt:
+              Date.now()
+
+          }
+        );
+
+      }
+
+
+      const ramLimit =
+        Number(
+          profile.ramLimit ||
+          FREE_RAM_LIMIT
+        );
+
+
+      if (
+        ram !== 4096 &&
+        usedRam + ram >
+        ramLimit
+      ) {
+
+        throw new Error(
+          `RAM limit exceeded. ` +
+          `Available: ${Math.max(
+            0,
+            ramLimit - usedRam
+          )} MB`
+        );
+
+      }
+
+
+      /*
+       * Create server.
+       */
+
+      const serverRef =
+        doc(
+          collection(db, "servers")
+        );
+
+
+      await setDoc(
+        serverRef,
+        {
+
+          owner:
+            user.uid,
+
+          name,
+
+          version,
+
+          ram,
+
+          status:
+            "provisioning",
+
+          address:
+            "",
+
+          port:
+            0,
+
+          console:
+            "Waiting for the hosting agent…",
+
+          createdAt:
+            Date.now()
+
+        }
+      );
+
+
+      /*
+       * Create provision job.
+       */
+
+      await addDoc(
+        collection(db, "jobs"),
+        {
+
+          owner:
+            user.uid,
+
+          serverId:
+            serverRef.id,
+
+          type:
+            "provision",
+
+          status:
+            "queued",
+
+          createdAt:
+            Date.now()
+
+        }
+      );
+
+
+      $("createDialog")
+        ?.close();
+
+
+      $("serverNameInput")
+        .value = "";
+
+
+      /*
+       * Immediately open the server so
+       * the user sees "Provisioning…".
+       */
+
+      openServer(
+        serverRef.id,
+        {
+
+          id:
+            serverRef.id,
+
+          name,
+
+          version,
+
+          ram,
+
+          status:
+            "provisioning",
+
+          address:
+            ""
+
+        }
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        "Create server error:",
+        error
+      );
+
+
+      alert(
+        error.message ||
+        "Failed to create server."
+      );
+
+    }
+
+  }
+);
+
+
+/* ============================================================
+   SERVER ACTIONS
+   ============================================================ */
+
+document
+  .querySelectorAll(
+    "[data-action]"
+  )
+  .forEach(
+    button => {
+
+      button.addEventListener(
+        "click",
+        async () => {
+
+          const user =
+            auth.currentUser;
+
+
+          if (
+            !user ||
+            !currentServerId
+          ) {
+
+            return;
+
+          }
+
+
+          const type =
+            button.dataset.action;
+
+
+          try {
+
+            /*
+             * Update the UI immediately.
+             * This prevents the "nothing happened"
+             * feeling while the agent receives the job.
+             */
+
+            const temporaryStatus = {
+
+              start:
+                "starting",
+
+              stop:
+                "stopping",
+
+              restart:
+                "restarting"
+
+            }[type];
+
+
+            if (
+              temporaryStatus
+            ) {
+
+              $("serverStatus")
+                .textContent =
+                  prettyStatus(
+                    temporaryStatus
+                  );
+
+            }
+
+
+            await addDoc(
+              collection(db, "jobs"),
+              {
+
+                owner:
+                  user.uid,
+
+                serverId:
+                  currentServerId,
+
+                type,
+
+                status:
+                  "queued",
+
+                createdAt:
+                  Date.now()
+
+              }
+            );
+
+
+          } catch (error) {
+
+            console.error(
+              "Action error:",
+              error
+            );
+
+
+            showFirebaseError(
+              error
+            );
+
+          }
+
+        }
+      );
+
+    }
+  );
+
+
+/* ============================================================
+   COMMAND LINE
+   ============================================================ */
+
+$("commandForm")?.addEventListener(
+  "submit",
+  async event => {
+
+    event.preventDefault();
+
+
+    const user =
+      auth.currentUser;
+
+
+    if (
+      !user ||
+      !currentServerId
+    ) {
+
+      showMessage(
+        $("commandMsg"),
+        "Select a server first.",
+        "error"
+      );
 
       return;
 
@@ -680,10 +1517,21 @@ $("commandForm").onsubmit =
         .trim();
 
 
-    if (!command) return;
+    if (!command) {
+
+      return;
+
+    }
 
 
-    if (command.startsWith("/")) {
+    /*
+     * Minecraft console commands don't
+     * need the leading slash.
+     */
+
+    if (
+      command.startsWith("/")
+    ) {
 
       command =
         command.substring(1);
@@ -697,50 +1545,65 @@ $("commandForm").onsubmit =
         collection(db, "jobs"),
         {
 
-          owner: user.uid,
+          owner:
+            user.uid,
 
           serverId:
             currentServerId,
 
-          type: "command",
+          type:
+            "command",
 
           command,
 
-          createdAt:
-            Date.now(),
-
           status:
-            "queued"
+            "queued",
+
+          createdAt:
+            Date.now()
 
         }
       );
 
 
-      $("commandInput").value = "";
+      $("commandInput")
+        .value = "";
 
-      $("commandMsg")
-        .textContent =
-          "Command sent.";
 
-    } catch (err) {
+      showMessage(
+        $("commandMsg"),
+        "Command sent.",
+        "success"
+      );
 
-      console.error(err);
 
-      $("commandMsg")
-        .textContent =
-          "Firebase denied this command.";
+    } catch (error) {
+
+      console.error(
+        "Command error:",
+        error
+      );
+
+
+      showFirebaseError(
+        error,
+        $("commandMsg")
+      );
 
     }
 
-  };
+  }
+);
 
 
-/* =========================================================
-   FILE INDEX
-   ========================================================= */
+/* ============================================================
+   FILES
+   ============================================================ */
 
-$("refreshFiles").onclick =
-  refreshFiles;
+$("refreshFiles")?.addEventListener(
+  "click",
+  refreshFiles
+);
 
 
 async function refreshFiles() {
@@ -748,8 +1611,11 @@ async function refreshFiles() {
   const user =
     auth.currentUser;
 
-  if (!user ||
-      !currentServerId) {
+
+  if (
+    !user ||
+    !currentServerId
+  ) {
 
     return;
 
@@ -758,41 +1624,45 @@ async function refreshFiles() {
 
   try {
 
-    const q = query(
-      collection(
-        db,
-        "serverFiles"
-      ),
+    const q =
+      query(
+        collection(
+          db,
+          "serverFiles"
+        ),
 
-      where(
-        "owner",
-        "==",
-        user.uid
-      ),
+        where(
+          "owner",
+          "==",
+          user.uid
+        ),
 
-      where(
-        "serverId",
-        "==",
-        currentServerId
-      )
-    );
+        where(
+          "serverId",
+          "==",
+          currentServerId
+        )
+      );
 
 
     const snapshot =
       await getDocs(q);
 
+
     const files =
       $("files");
+
 
     files.innerHTML = "";
 
 
     if (snapshot.empty) {
 
-      files.innerHTML =
-        `<div class="muted">
-          No file index reported yet.
-        </div>`;
+      files.innerHTML = `
+        <div class="muted">
+          No files reported yet.
+        </div>
+      `;
 
       return;
 
@@ -800,36 +1670,40 @@ async function refreshFiles() {
 
 
     snapshot.forEach(
-      snap => {
+      item => {
 
-        const info =
-          snap.data();
+        const data =
+          item.data();
 
-        const div =
-          document.createElement("div");
 
-        div.className =
-          "file";
-
-        div.textContent =
-          `${info.path || snap.id}` +
-          ` — ${info.type || "file"}` +
-          (
-            info.size
-              ? ` — ${info.size} bytes`
-              : ""
+        const file =
+          document.createElement(
+            "div"
           );
 
-        files.appendChild(div);
+
+        file.className =
+          "file";
+
+
+        file.textContent =
+          data.path ||
+          item.id;
+
+
+        files.appendChild(
+          file
+        );
 
       }
     );
 
-  } catch (err) {
+
+  } catch (error) {
 
     console.error(
-      "File refresh:",
-      err
+      "File error:",
+      error
     );
 
   }
@@ -837,17 +1711,43 @@ async function refreshFiles() {
 }
 
 
-/* =========================================================
-   HTML ESCAPE
-   ========================================================= */
+/* ============================================================
+   FIREBASE ERROR
+   ============================================================ */
 
-function escapeHtml(value) {
+function showFirebaseError(
+  error,
+  element = null
+) {
 
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+  console.error(
+    "Firebase error:",
+    error
+  );
+
+
+  const message =
+    error?.code ===
+      "permission-denied"
+      ? "Firebase denied this operation. Check your Firestore rules."
+      : (
+          error?.message ||
+          "Firebase operation failed."
+        );
+
+
+  if (element) {
+
+    showMessage(
+      element,
+      message,
+      "error"
+    );
+
+  } else {
+
+    alert(message);
+
+  }
 
 }
