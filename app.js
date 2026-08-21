@@ -1,791 +1,620 @@
-"use strict";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
 
-const admin = require("firebase-admin");
-const fs = require("fs");
-const fsp = fs.promises;
-const path = require("path");
-const os = require("os");
-const https = require("https");
-const http = require("http");
-const { spawn, execFile } = require("child_process");
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+
+import {
+  getFirestore,
+  collection,
+  doc,
+  addDoc,
+  setDoc,
+  getDoc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
+  where,
+  orderBy,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 
 
 // ============================================================
-// CONFIG
+// FIREBASE CONFIG
 // ============================================================
 
-const CONFIG = {
-
-  // Your Firebase project
+const firebaseConfig = {
+  apiKey: "AIzaSyAew9fVw91DarhE9mUUIy2VZ2sCVxrAX44",
+  authDomain: "mchost-9516b.firebaseapp.com",
   projectId: "mchost-9516b",
+  storageBucket: "mchost-9516b.firebasestorage.app",
+  messagingSenderId: "692774609042",
+  appId: "1:692774609042:web:dd447dc87803450d22864b",
+  measurementId: "G-ED4W6V8CNT"
+};
 
-  // Local storage
-  rootDir: "C:\\LocalNode",
 
-  serversDir: "C:\\LocalNode\\servers",
+const firebaseApp = initializeApp(firebaseConfig);
 
-  logsDir: "C:\\LocalNode\\logs",
+const auth = getAuth(firebaseApp);
 
-  // Public hostname users will see.
-  //
-  // IMPORTANT:
-  // This does NOT automatically create DNS or ports.
-  //
-  publicHost: "freemchosting.vexr.dev",
+const db = getFirestore(firebaseApp);
 
-  // Starting port.
-  //
-  // The agent searches for an unused port beginning here.
-  firstPort: 25565,
 
-  // Maximum port it will automatically allocate.
-  lastPort: 25664,
+// ============================================================
+// SETTINGS
+// ============================================================
 
-  // Your normal hosting limits.
-  maxServersPerUser: 3,
+// Default account allowance.
+const DEFAULT_RAM = 3072;
 
-  defaultRamMB: 3072,
+// Maximum normal online servers.
+const MAX_SERVERS = 3;
 
-  paidRamMB: 4096,
+// Paid upgrade.
+const UPGRADE_RAM = 4096;
 
-  // How often to refresh the file index.
-  fileIndexInterval: 30000,
+// Price displayed to users.
+const UPGRADE_PRICE = 3;
 
-  // How often to look for jobs.
-  jobPollInterval: 3000
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+const $ = id => document.getElementById(id);
+
+function showMessage(element, message, error = false) {
+  if (!element) return;
+
+  element.textContent = message;
+
+  element.style.color = error
+    ? "#ff6b6b"
+    : "";
+}
+
+
+function friendlyError(error) {
+  if (!error) return "Something went wrong.";
+
+  const code = error.code || "";
+
+  const messages = {
+    "auth/invalid-credential":
+      "Invalid email or password.",
+
+    "auth/invalid-email":
+      "Please enter a valid email.",
+
+    "auth/email-already-in-use":
+      "That email is already registered.",
+
+    "auth/weak-password":
+      "Password must be at least 6 characters.",
+
+    "auth/user-not-found":
+      "Account not found.",
+
+    "auth/wrong-password":
+      "Incorrect password.",
+
+    "permission-denied":
+      "Firebase denied this operation. Check your Firestore rules."
+  };
+
+  return messages[code] ||
+    error.message ||
+    "Something went wrong.";
+}
+
+
+// ============================================================
+// STATE
+// ============================================================
+
+let registerMode = false;
+
+let currentServerId = null;
+
+let unsubscribeServers = null;
+
+let unsubscribeCurrentServer = null;
+
+let unsubscribeProfile = null;
+
+let currentProfile = null;
+
+
+// ============================================================
+// AUTH UI
+// ============================================================
+
+$("toggleAuth").onclick = () => {
+
+  registerMode = !registerMode;
+
+  $("authTitle").textContent =
+    registerMode ? "Register" : "Sign in";
+
+  $("authSubmit").textContent =
+    registerMode ? "Create account" : "Sign in";
+
+  $("toggleAuth").textContent =
+    registerMode
+      ? "Already have an account? Sign in"
+      : "Need an account? Register";
+
+  $("authMsg").textContent = "";
+};
+
+
+// ============================================================
+// LOGIN / REGISTER
+// ============================================================
+
+$("authForm").onsubmit = async event => {
+
+  event.preventDefault();
+
+  showMessage($("authMsg"), "");
+
+  const email =
+    $("email").value.trim();
+
+  const password =
+    $("password").value;
+
+  try {
+
+    if (registerMode) {
+
+      await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+    } else {
+
+      await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+    }
+
+  } catch (error) {
+
+    console.error(error);
+
+    showMessage(
+      $("authMsg"),
+      friendlyError(error),
+      true
+    );
+
+  }
+};
+
+
+// ============================================================
+// LOGOUT
+// ============================================================
+
+$("logout").onclick = async () => {
+
+  try {
+
+    await signOut(auth);
+
+  } catch (error) {
+
+    console.error(error);
+
+  }
 
 };
 
 
 // ============================================================
-// FIREBASE ADMIN
-// ============================================================
-//
-// Put service-account.json beside this file:
-//
-// C:\LocalNode\service-account.json
-//
-// NEVER upload this file to GitHub.
-// NEVER put it in your website.
-// NEVER give it to users.
+// AUTH STATE
 // ============================================================
 
-const serviceAccountPath =
-  path.join(
-    __dirname,
-    "service-account.json"
-  );
+onAuthStateChanged(auth, async user => {
+
+  if (!user) {
+
+    $("auth").classList.remove("hidden");
+
+    $("app").classList.add("hidden");
+
+    $("logout").classList.add("hidden");
+
+    cleanupListeners();
+
+    return;
+  }
 
 
-if (!fs.existsSync(serviceAccountPath)) {
+  $("auth").classList.add("hidden");
 
-  console.error(
-    "\nERROR: service-account.json was not found.\n\n" +
-    "Put your Firebase Admin SDK service-account JSON here:\n" +
-    serviceAccountPath +
-    "\n"
-  );
+  $("app").classList.remove("hidden");
 
-  process.exit(1);
+  $("logout").classList.remove("hidden");
 
-}
+  $("who").textContent =
+    user.email || user.uid;
 
 
-const serviceAccount =
-  require(serviceAccountPath);
+  try {
 
+    await ensureUserProfile(user);
 
-admin.initializeApp({
+    watchProfile(user.uid);
 
-  credential:
-    admin.credential.cert(
-      serviceAccount
-    ),
+    watchServers(user.uid);
 
-  projectId:
-    CONFIG.projectId
+  } catch (error) {
+
+    console.error(
+      "Account initialization error:",
+      error
+    );
+
+    showMessage(
+      $("purchaseMsg"),
+      friendlyError(error),
+      true
+    );
+
+  }
 
 });
 
 
-const db =
-  admin.firestore();
-
-
 // ============================================================
-// LOCAL STATE
+// CLEANUP
 // ============================================================
 
-const processes =
-  new Map();
+function cleanupListeners() {
 
-const jobLocks =
-  new Set();
+  if (unsubscribeServers) {
+
+    unsubscribeServers();
+
+    unsubscribeServers = null;
+
+  }
 
 
-// ============================================================
-// DIRECTORIES
-// ============================================================
+  if (unsubscribeCurrentServer) {
 
-async function ensureDirectories() {
+    unsubscribeCurrentServer();
 
-  await fsp.mkdir(
-    CONFIG.rootDir,
-    { recursive: true }
-  );
+    unsubscribeCurrentServer = null;
 
-  await fsp.mkdir(
-    CONFIG.serversDir,
-    { recursive: true }
-  );
+  }
 
-  await fsp.mkdir(
-    CONFIG.logsDir,
-    { recursive: true }
-  );
+
+  if (unsubscribeProfile) {
+
+    unsubscribeProfile();
+
+    unsubscribeProfile = null;
+
+  }
+
+
+  currentServerId = null;
+
+  currentProfile = null;
 
 }
 
 
-ensureDirectories()
-  .catch(error => {
+// ============================================================
+// USER PROFILE
+// ============================================================
 
-    console.error(
-      "Directory initialization failed:",
-      error
+async function ensureUserProfile(user) {
+
+  const userRef =
+    doc(db, "users", user.uid);
+
+  const snap =
+    await getDoc(userRef);
+
+
+  if (!snap.exists()) {
+
+    await setDoc(userRef, {
+
+      email: user.email || "",
+
+      ramLimit: DEFAULT_RAM,
+
+      maxServers: MAX_SERVERS,
+
+      createdAt: Date.now()
+
+    });
+
+    return;
+
+  }
+
+
+  const data = snap.data();
+
+  const changes = {};
+
+
+  if (typeof data.ramLimit !== "number") {
+
+    changes.ramLimit = DEFAULT_RAM;
+
+  }
+
+
+  if (typeof data.maxServers !== "number") {
+
+    changes.maxServers = MAX_SERVERS;
+
+  }
+
+
+  if (Object.keys(changes).length) {
+
+    await updateDoc(
+      userRef,
+      changes
     );
 
-    process.exit(1);
-
-  });
-
-
-// ============================================================
-// LOGGING
-// ============================================================
-
-function log(...args) {
-
-  console.log(
-    new Date().toISOString(),
-    ...args
-  );
+  }
 
 }
 
 
 // ============================================================
-// FIRESTORE HELPERS
+// WATCH USER PROFILE
 // ============================================================
 
-async function updateServer(
-  serverId,
-  data
-) {
+function watchProfile(uid) {
 
-  await db
-    .collection("servers")
-    .doc(serverId)
-    .set(
-      data,
-      { merge: true }
-    );
+  if (unsubscribeProfile) {
 
-}
+    unsubscribeProfile();
+
+  }
 
 
-async function updateJob(
-  jobId,
-  data
-) {
-
-  await db
-    .collection("jobs")
-    .doc(jobId)
-    .set(
-      data,
-      { merge: true }
-    );
-
-}
+  const userRef =
+    doc(db, "users", uid);
 
 
-// ============================================================
-// SAFE PATH
-// ============================================================
+  unsubscribeProfile =
+    onSnapshot(
+      userRef,
+      snap => {
 
-function serverDirectory(serverId) {
+        if (!snap.exists()) return;
 
-  // Firestore IDs normally contain safe characters,
-  // but don't trust external input.
+        currentProfile =
+          snap.data();
 
-  const safe =
-    String(serverId)
-      .replace(/[^a-zA-Z0-9_-]/g, "_");
+        updateResourceUI();
 
-  return path.join(
-    CONFIG.serversDir,
-    safe
-  );
+      },
 
-}
+      error => {
 
-
-// ============================================================
-// DOWNLOAD
-// ============================================================
-
-function downloadFile(
-  url,
-  destination
-) {
-
-  return new Promise(
-    (resolve, reject) => {
-
-      const client =
-        url.startsWith("https:")
-          ? https
-          : http;
-
-
-      const request =
-        client.get(
-          url,
-          response => {
-
-            // Redirect
-
-            if (
-              response.statusCode >= 300 &&
-              response.statusCode < 400 &&
-              response.headers.location
-            ) {
-
-              response.resume();
-
-              downloadFile(
-                response.headers.location,
-                destination
-              )
-                .then(resolve)
-                .catch(reject);
-
-              return;
-
-            }
-
-
-            if (
-              response.statusCode !== 200
-            ) {
-
-              response.resume();
-
-              reject(
-                new Error(
-                  `Download failed: HTTP ${response.statusCode}`
-                )
-              );
-
-              return;
-
-            }
-
-
-            const file =
-              fs.createWriteStream(
-                destination
-              );
-
-
-            response.pipe(file);
-
-
-            file.on(
-              "finish",
-              () => {
-
-                file.close(
-                  () => resolve()
-                );
-
-              }
-            );
-
-
-            file.on(
-              "error",
-              error => {
-
-                file.close(
-                  () => {}
-                );
-
-                reject(error);
-
-              }
-            );
-
-          }
+        console.error(
+          "Profile listener:",
+          error
         );
 
-
-      request.on(
-        "error",
-        reject
-      );
-
-    }
-  );
+      }
+    );
 
 }
 
 
 // ============================================================
-// GET MINECRAFT SERVER URL
+// WATCH SERVERS
 // ============================================================
 
-async function getMinecraftServerUrl(
-  version
-) {
+function watchServers(uid) {
 
-  const manifestUrl =
-    "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
+  if (unsubscribeServers) {
 
-
-  const manifest =
-    await fetchJson(
-      manifestUrl
-    );
-
-
-  const versionInfo =
-    manifest.versions.find(
-      item =>
-        item.id === version
-    );
-
-
-  if (!versionInfo) {
-
-    throw new Error(
-      `Minecraft version ${version} was not found.`
-    );
+    unsubscribeServers();
 
   }
 
 
-  const metadata =
-    await fetchJson(
-      versionInfo.url
+  const serversRef =
+    collection(db, "servers");
+
+
+  const q =
+    query(
+      serversRef,
+      where("owner", "==", uid)
     );
 
 
-  const server =
-    metadata.downloads &&
-    metadata.downloads.server;
+  unsubscribeServers =
+    onSnapshot(
+      q,
+      snapshot => {
+
+        const servers = [];
+
+        snapshot.forEach(serverDoc => {
+
+          servers.push({
+
+            id: serverDoc.id,
+
+            ...serverDoc.data()
+
+          });
+
+        });
 
 
-  if (
-    !server ||
-    !server.url
-  ) {
+        renderServers(servers);
 
-    throw new Error(
-      `No official server download is available for ${version}.`
+        updateResourceUI(servers);
+
+      },
+
+      error => {
+
+        console.error(
+          "Server listener:",
+          error
+        );
+
+        showMessage(
+          $("purchaseMsg"),
+          "Could not load servers: " +
+          friendlyError(error),
+          true
+        );
+
+      }
     );
 
-  }
-
-
-  return server.url;
-
 }
 
 
 // ============================================================
-// JSON DOWNLOAD
+// RENDER SERVERS
 // ============================================================
 
-function fetchJson(url) {
+function renderServers(servers) {
 
-  return new Promise(
-    (resolve, reject) => {
+  const box =
+    $("servers");
 
-      const client =
-        url.startsWith("https:")
-          ? https
-          : http;
+  box.innerHTML = "";
 
 
-      client.get(
-        url,
-        response => {
+  if (!servers.length) {
 
-          if (
-            response.statusCode >= 300 &&
-            response.statusCode < 400 &&
-            response.headers.location
-          ) {
+    box.innerHTML = `
+      <div class="card">
+        <h3>No servers yet</h3>
+        <div class="muted">
+          Create one to get started.
+        </div>
+      </div>
+    `;
 
-            response.resume();
-
-            fetchJson(
-              response.headers.location
-            )
-              .then(resolve)
-              .catch(reject);
-
-            return;
-
-          }
-
-
-          if (
-            response.statusCode !== 200
-          ) {
-
-            response.resume();
-
-            reject(
-              new Error(
-                `HTTP ${response.statusCode}`
-              )
-            );
-
-            return;
-
-          }
-
-
-          let data = "";
-
-
-          response.setEncoding(
-            "utf8"
-          );
-
-
-          response.on(
-            "data",
-            chunk => {
-              data += chunk;
-            }
-          );
-
-
-          response.on(
-            "end",
-            () => {
-
-              try {
-
-                resolve(
-                  JSON.parse(data)
-                );
-
-              } catch (error) {
-
-                reject(error);
-
-              }
-
-            }
-          );
-
-        }
-      )
-      .on(
-        "error",
-        reject
-      );
-
-    }
-  );
-
-}
-
-
-// ============================================================
-// FIND JAVA
-// ============================================================
-
-function findJava() {
-
-  return new Promise(
-    resolve => {
-
-      execFile(
-        "java",
-        [
-          "-version"
-        ],
-        {
-          windowsHide: true
-        },
-        error => {
-
-          if (!error) {
-
-            resolve("java");
-
-            return;
-
-          }
-
-
-          const candidates = [
-
-            "C:\\Program Files\\Java\\jdk-21\\bin\\java.exe",
-
-            "C:\\Program Files\\Java\\jdk-21.0.1\\bin\\java.exe",
-
-            "C:\\Program Files\\Java\\jdk-21.0.2\\bin\\java.exe",
-
-            "C:\\Program Files\\Eclipse Adoptium\\jdk-21\\bin\\java.exe",
-
-            "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.1\\bin\\java.exe",
-
-            "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.2\\bin\\java.exe"
-
-          ];
-
-
-          for (
-            const candidate of candidates
-          ) {
-
-            if (
-              fs.existsSync(candidate)
-            ) {
-
-              resolve(candidate);
-
-              return;
-
-            }
-
-          }
-
-
-          resolve(null);
-
-        }
-      );
-
-    }
-  );
-
-}
-
-
-// ============================================================
-// FIND FREE PORT
-// ============================================================
-
-function isPortFree(
-  port
-) {
-
-  return new Promise(
-    resolve => {
-
-      const net =
-        require("net");
-
-
-      const server =
-        net.createServer();
-
-
-      server.once(
-        "error",
-        () => {
-
-          resolve(false);
-
-        }
-      );
-
-
-      server.once(
-        "listening",
-        () => {
-
-          server.close(
-            () => resolve(true)
-          );
-
-        }
-      );
-
-
-      server.listen(
-        port,
-        "0.0.0.0"
-      );
-
-    }
-  );
-
-}
-
-
-async function findFreePort() {
-
-  for (
-    let port = CONFIG.firstPort;
-    port <= CONFIG.lastPort;
-    port++
-  ) {
-
-    const free =
-      await isPortFree(port);
-
-
-    if (free) {
-
-      return port;
-
-    }
+    return;
 
   }
 
 
-  throw new Error(
-    "No free Minecraft ports are available."
-  );
+  for (const server of servers) {
 
-}
+    const el =
+      document.createElement("div");
 
-
-// ============================================================
-// GET USER LIMITS
-// ============================================================
-
-async function getUserProfile(
-  uid
-) {
-
-  const snap =
-    await db
-      .collection("users")
-      .doc(uid)
-      .get();
+    el.className =
+      "card server";
 
 
-  if (!snap.exists) {
+    el.innerHTML = `
+      <div class="row between">
 
-    return {
+        <h3></h3>
 
-      ramLimit:
-        CONFIG.defaultRamMB,
+        <span class="pill"></span>
 
-      maxServers:
-        CONFIG.maxServersPerUser
+      </div>
 
-    };
+      <div class="muted address"></div>
+
+      <div class="muted details"></div>
+    `;
+
+
+    el.querySelector("h3").textContent =
+      server.name || server.id;
+
+
+    el.querySelector(".pill").textContent =
+      server.status || "offline";
+
+
+    el.querySelector(".address").textContent =
+      server.address ||
+      "Not online yet";
+
+
+    el.querySelector(".details").textContent =
+      `${server.version || ""} · ${
+        Number(server.ram || 1024) / 1024
+      } GB`;
+
+
+    el.onclick = () =>
+      openServer(
+        server.id,
+        server
+      );
+
+
+    box.appendChild(el);
 
   }
 
-
-  const data =
-    snap.data();
-
-
-  return {
-
-    ramLimit:
-      Number(
-        data.ramLimit ||
-        CONFIG.defaultRamMB
-      ),
-
-    maxServers:
-      Number(
-        data.maxServers ||
-        CONFIG.maxServersPerUser
-      )
-
-  };
-
 }
 
 
 // ============================================================
-// GET USER SERVERS
+// RESOURCE UI
 // ============================================================
 
-async function getUserServers(
-  uid
-) {
-
-  const snap =
-    await db
-      .collection("servers")
-      .where(
-        "owner",
-        "==",
-        uid
-      )
-      .get();
-
-
-  return snap.docs.map(
-    doc => ({
-      id: doc.id,
-      ...doc.data()
-    })
-  );
-
-}
-
-
-// ============================================================
-// VALIDATE RESOURCES
-// ============================================================
-
-async function validateServerResources(
-  job,
-  requestedRam
-) {
+function updateResourceUI(servers = []) {
 
   const profile =
-    await getUserProfile(
-      job.owner
+    currentProfile || {};
+
+
+  const ramLimit =
+    Number(
+      profile.ramLimit ||
+      DEFAULT_RAM
     );
 
 
-  const servers =
-    await getUserServers(
-      job.owner
+  const maxServers =
+    Number(
+      profile.maxServers ||
+      MAX_SERVERS
     );
 
 
-  const active =
-    servers.filter(
-      server =>
-        server.status === "online" ||
-        server.status === "starting" ||
-        server.status === "provisioning"
+  const runningServers =
+    servers.filter(server =>
+      server.status === "online" ||
+      server.status === "starting"
     );
-
-
-  if (
-    active.length >=
-    profile.maxServers
-  ) {
-
-    throw new Error(
-      `Server limit reached (${profile.maxServers}).`
-    );
-
-  }
 
 
   const usedRam =
-    active.reduce(
+    runningServers.reduce(
       (total, server) =>
         total +
         Number(server.ram || 0),
@@ -793,1253 +622,238 @@ async function validateServerResources(
     );
 
 
-  if (
-    usedRam + requestedRam >
-    profile.ramLimit
-  ) {
-
-    throw new Error(
-      `RAM limit exceeded. ` +
-      `Available: ${
-        Math.max(
-          0,
-          profile.ramLimit - usedRam
-        )
-      } MB`
-    );
-
-  }
-
-}
+  const usedGB =
+    usedRam / 1024;
 
 
-// ============================================================
-// EULA
-// ============================================================
-
-async function ensureEula(
-  dir
-) {
-
-  const eula =
-    path.join(
-      dir,
-      "eula.txt"
-    );
+  const limitGB =
+    ramLimit / 1024;
 
 
-  if (
-    !fs.existsSync(eula)
-  ) {
+  if ($("ramUsage")) {
 
-    await fsp.writeFile(
-      eula,
-      "eula=true\r\n",
-      "utf8"
-    );
-
-  }
-
-}
-
-
-// ============================================================
-// PROVISION
-// ============================================================
-
-async function provisionServer(
-  jobId,
-  job
-) {
-
-  const serverId =
-    job.serverId;
-
-
-  if (!serverId) {
-
-    throw new Error(
-      "Job has no serverId."
-    );
+    $("ramUsage").textContent =
+      `${usedGB} GB / ${limitGB} GB`;
 
   }
 
 
-  const serverRef =
-    db
-      .collection("servers")
-      .doc(serverId);
+  if ($("serverUsage")) {
 
-
-  const serverSnap =
-    await serverRef.get();
-
-
-  if (!serverSnap.exists) {
-
-    throw new Error(
-      "Server document does not exist."
-    );
+    $("serverUsage").textContent =
+      `${runningServers.length} / ${maxServers}`;
 
   }
 
 
-  const server =
-    serverSnap.data();
-
-
-  const ram =
-    Number(
-      server.ram ||
-      CONFIG.defaultRamMB
-    );
-
-
-  const version =
-    server.version ||
-    "1.21.11";
-
-
-  // Check limits again on the trusted agent.
-
-  await validateServerResources(
-    job,
-    ram
-  );
-
-
-  const dir =
-    serverDirectory(
-      serverId
-    );
-
-
-  await fsp.mkdir(
-    dir,
-    {
-      recursive: true
-    }
-  );
-
-
-  await updateServer(
-    serverId,
-    {
-
-      status:
-        "provisioning",
-
-      console:
-        "Preparing server…",
-
-      updatedAt:
-        Date.now()
-
-    }
-  );
-
-
-  log(
-    `Provisioning ${serverId} (${version}, ${ram} MB)`
-  );
-
-
-  // Find Minecraft server download.
-
-  const url =
-    await getMinecraftServerUrl(
-      version
-    );
-
-
-  const jar =
-    path.join(
-      dir,
-      "server.jar"
-    );
-
-
-  if (
-    !fs.existsSync(jar)
-  ) {
-
-    await updateServer(
-      serverId,
-      {
-
-        console:
-          "Downloading Minecraft server…"
-
-      }
-    );
-
-
-    await downloadFile(
-      url,
-      jar
-    );
-
-  }
-
-
-  await ensureEula(
-    dir
-  );
-
-
-  // Allocate port.
-
-  const port =
-    server.port ||
-    await findFreePort();
-
-
-  await updateServer(
-    serverId,
-    {
-
-      port,
-
-      address:
-        `${CONFIG.publicHost}:${port}`,
-
-      status:
-        "offline",
-
-      console:
-        "Server provisioned. Ready to start.",
-
-      updatedAt:
-        Date.now()
-
-    }
-  );
-
-
-  // Index files.
-
-  await indexFiles(
-    serverId,
-    job.owner,
-    dir
-  );
-
-
-  return {
-
-    port,
-    dir
-
-  };
-
-}
-
-
-// ============================================================
-// START SERVER
-// ============================================================
-
-async function startServer(
-  jobId,
-  job
-) {
-
-  const serverId =
-    job.serverId;
-
-
-  const serverRef =
-    db
-      .collection("servers")
-      .doc(serverId);
-
-
-  const snap =
-    await serverRef.get();
-
-
-  if (!snap.exists) {
-
-    throw new Error(
-      "Server not found."
-    );
-
-  }
-
-
-  const server =
-    snap.data();
-
-
-  // Already running.
-
-  if (
-    processes.has(serverId)
-  ) {
-
-    await updateServer(
-      serverId,
-      {
-
-        status:
-          "online"
-
-      }
-    );
-
-    return;
-
-  }
-
-
-  const dir =
-    serverDirectory(
-      serverId
-    );
-
-
-  const jar =
-    path.join(
-      dir,
-      "server.jar"
-    );
-
-
-  if (
-    !fs.existsSync(jar)
-  ) {
-
-    throw new Error(
-      "server.jar is missing. Provision the server first."
-    );
-
-  }
-
-
-  const java =
-    await findJava();
-
-
-  if (!java) {
-
-    throw new Error(
-      "Java was not found. Install a compatible Java runtime and add java.exe to PATH."
-    );
-
-  }
-
-
-  const ram =
-    Number(
-      server.ram ||
-      CONFIG.defaultRamMB
-    );
-
-
-  const port =
-    Number(
-      server.port ||
-      await findFreePort()
-    );
-
-
-  await updateServer(
-    serverId,
-    {
-
-      status:
-        "starting",
-
-      port,
-
-      address:
-        `${CONFIG.publicHost}:${port}`,
-
-      console:
-        "Starting Minecraft…",
-
-      updatedAt:
-        Date.now()
-
-    }
-  );
-
-
-  await ensureEula(
-    dir
-  );
-
-
-  // Make sure server.properties has the allocated port.
-
-  await configureServerProperties(
-    dir,
-    port
-  );
-
-
-  const args = [
-
-    `-Xms${ram}M`,
-
-    `-Xmx${ram}M`,
-
-    "-jar",
-
-    "server.jar",
-
-    "nogui"
-
-  ];
-
-
-  log(
-    `Starting ${serverId} using ${java}`
-  );
-
-
-  const child =
-    spawn(
-      java,
-      args,
-      {
-
-        cwd:
-          dir,
-
-        windowsHide:
-          true,
-
-        stdio:
-          [
-            "pipe",
-            "pipe",
-            "pipe"
-          ]
-
-      }
-    );
-
-
-  const state = {
-
-    process:
-      child,
-
-    startedAt:
-      Date.now(),
-
-    consoleBuffer:
-      ""
-
-  };
-
-
-  processes.set(
-    serverId,
-    state
-  );
-
-
-  function handleOutput(
-    chunk
-  ) {
-
-    const text =
-      chunk.toString();
-
-
-    process.stdout.write(
-      `[${serverId}] ${text}`
-    );
-
-
-    state.consoleBuffer +=
-      text;
-
-
-    // Keep the database document reasonably small.
-
-    if (
-      state.consoleBuffer.length >
-      12000
-    ) {
-
-      state.consoleBuffer =
-        state.consoleBuffer.slice(
-          -12000
-        );
-
-    }
-
-
-    updateServer(
-      serverId,
-      {
-
-        console:
-          state.consoleBuffer,
-
-        updatedAt:
-          Date.now()
-
-      }
-    ).catch(
-      console.error
-    );
-
-
-    if (
-      /Done \([0-9.]+s\)! For help, type "help"/i
-        .test(text)
-    ) {
-
-      updateServer(
-        serverId,
-        {
-
-          status:
-            "online",
-
-          console:
-            state.consoleBuffer,
-
-          updatedAt:
-            Date.now()
-
-        }
-      ).catch(
-        console.error
-      );
-
-    }
-
-  }
-
-
-  child.stdout.on(
-    "data",
-    handleOutput
-  );
-
-
-  child.stderr.on(
-    "data",
-    handleOutput
-  );
-
-
-  child.on(
-    "error",
-    error => {
-
-      log(
-        `Minecraft process error ${serverId}:`,
-        error
-      );
-
-
-      processes.delete(
-        serverId
-      );
-
-
-      updateServer(
-        serverId,
-        {
-
-          status:
-            "error",
-
-          console:
-            `${state.consoleBuffer}\n${error.message}`,
-
-          updatedAt:
-            Date.now()
-
-        }
-      ).catch(
-        console.error
-      );
-
-    }
-  );
-
-
-  child.on(
-    "close",
-    code => {
-
-      log(
-        `Minecraft ${serverId} exited with code ${code}`
-      );
-
-
-      processes.delete(
-        serverId
-      );
-
-
-      updateServer(
-        serverId,
-        {
-
-          status:
-            "offline",
-
-          console:
-            `${state.consoleBuffer}\nProcess exited with code ${code}.`,
-
-          updatedAt:
-            Date.now()
-
-        }
-      ).catch(
-        console.error
-      );
-
-    }
-  );
-
-
-  // Give Minecraft a little time to start.
-
-  await new Promise(
-    resolve =>
-      setTimeout(
-        resolve,
-        3000
-      )
-  );
-
-}
-
-
-// ============================================================
-// SERVER.PROPERTIES
-// ============================================================
-
-async function configureServerProperties(
-  dir,
-  port
-) {
-
-  const file =
-    path.join(
-      dir,
-      "server.properties"
-    );
-
-
-  let content = "";
-
-
-  if (
-    fs.existsSync(file)
-  ) {
-
-    content =
-      await fsp.readFile(
-        file,
-        "utf8"
-      );
-
-  }
-
-
-  const lines =
-    content
-      .split(/\r?\n/)
-      .filter(Boolean);
-
-
-  let foundPort =
-    false;
-
-
-  const output =
-    lines.map(
-      line => {
-
-        if (
-          line.startsWith(
-            "server-port="
+  if ($("ramProgress")) {
+
+    const percentage =
+      ramLimit > 0
+        ? Math.min(
+            100,
+            (usedRam / ramLimit) * 100
           )
-        ) {
-
-          foundPort =
-            true;
-
-          return `server-port=${port}`;
-
-        }
+        : 0;
 
 
-        return line;
-
-      }
-    );
-
-
-  if (!foundPort) {
-
-    output.push(
-      `server-port=${port}`
-    );
+    $("ramProgress").style.width =
+      `${percentage}%`;
 
   }
 
 
-  await fsp.writeFile(
-    file,
-    output.join("\r\n") +
-      "\r\n",
-    "utf8"
-  );
+  if ($("serverProgress")) {
+
+    const percentage =
+      maxServers > 0
+        ? Math.min(
+            100,
+            (runningServers.length / maxServers) * 100
+          )
+        : 0;
+
+
+    $("serverProgress").style.width =
+      `${percentage}%`;
+
+  }
 
 }
 
 
 // ============================================================
-// STOP SERVER
+// CREATE SERVER DIALOG
 // ============================================================
 
-async function stopServer(
-  jobId,
-  job
-) {
+$("newServer").onclick = () => {
 
-  const serverId =
-    job.serverId;
+  $("createDialog").showModal();
+
+};
 
 
-  const state =
-    processes.get(
-      serverId
-    );
+// ============================================================
+// CANCEL CREATE
+// ============================================================
+
+$("cancelCreate").onclick = () => {
+
+  $("createDialog").close();
+
+};
 
 
-  if (!state) {
+// ============================================================
+// 4 GB RESTRICTION
+// ============================================================
 
-    await updateServer(
-      serverId,
-      {
+$("ramInput").addEventListener(
+  "change",
+  () => {
 
-        status:
-          "offline",
+    const ram =
+      Number($("ramInput").value);
 
-        updatedAt:
-          Date.now()
 
-      }
+    if (ram !== UPGRADE_RAM) {
+
+      $("ramRestriction")
+        .classList
+        .add("hidden");
+
+      return;
+
+    }
+
+
+    $("ramRestriction")
+      .classList
+      .remove("hidden");
+
+
+    const currentLimit =
+      Number(
+        currentProfile?.ramLimit ||
+        DEFAULT_RAM
+      );
+
+
+    if (currentLimit >= UPGRADE_RAM) {
+
+      $("ramRestriction")
+        .classList
+        .add("hidden");
+
+      return;
+
+    }
+
+
+    const buy =
+      confirm(
+        "4 GB RAM is restricted.\n\n" +
+        "You need the $3 RAM upgrade " +
+        "to unlock 4 GB servers.\n\n" +
+        "Purchase the upgrade?"
+      );
+
+
+    if (buy) {
+
+      createRamPurchaseRequest();
+
+    }
+
+
+    $("ramInput").value =
+      "3072";
+
+  }
+);
+
+
+// ============================================================
+// PURCHASE RAM
+// ============================================================
+
+$("purchaseRam").onclick = async () => {
+
+  await createRamPurchaseRequest();
+
+};
+
+
+// ============================================================
+// CREATE REAL PURCHASE REQUEST
+// ============================================================
+
+async function createRamPurchaseRequest() {
+
+  const user =
+    auth.currentUser;
+
+
+  if (!user) {
+
+    showMessage(
+      $("purchaseMsg"),
+      "You must be signed in.",
+      true
     );
 
     return;
 
   }
-
-
-  await updateServer(
-    serverId,
-    {
-
-      status:
-        "stopping",
-
-      updatedAt:
-        Date.now()
-
-    }
-  );
 
 
   try {
 
-    // Minecraft command.
-
-    state.process.stdin.write(
-      "stop\n"
-    );
-
-  } catch {
-
-    // Ignore stdin errors.
-
-  }
-
-
-  // Give Minecraft time to save.
-
-  await new Promise(
-    resolve =>
-      setTimeout(
-        resolve,
-        10000
-      )
-  );
-
-
-  if (
-    processes.has(serverId)
-  ) {
-
-    try {
-
-      state.process.kill();
-
-    } catch {
-
-      // Ignore.
-
-    }
-
-  }
-
-
-  processes.delete(
-    serverId
-  );
-
-
-  await updateServer(
-    serverId,
-    {
-
-      status:
-        "offline",
-
-      updatedAt:
-        Date.now()
-
-    }
-  );
-
-}
-
-
-// ============================================================
-// RESTART
-// ============================================================
-
-async function restartServer(
-  jobId,
-  job
-) {
-
-  const serverId =
-    job.serverId;
-
-
-  await stopServer(
-    jobId,
-    job
-  );
-
-
-  await new Promise(
-    resolve =>
-      setTimeout(
-        resolve,
-        2000
-      )
-  );
-
-
-  await startServer(
-    jobId,
-    job
-  );
-
-}
-
-
-// ============================================================
-// FILE INDEX
-// ============================================================
-
-async function indexFiles(
-  serverId,
-  owner,
-  dir
-) {
-
-  if (
-    !fs.existsSync(dir)
-  ) {
-
-    return;
-
-  }
-
-
-  const files =
-    await walkFiles(
-      dir
-    );
-
-
-  const batch =
-    db.batch();
-
-
-  // Delete/rewriteing individual records is intentionally
-  // limited to files we currently discover.
-
-  for (
-    const file of files
-  ) {
-
-    const relative =
-      path
-        .relative(
-          dir,
-          file.path
-        )
-        .replace(
-          /\\/g,
-          "/"
-        );
-
-
-    const fileId =
-      `${owner}_${serverId}_${relative}`
-        .replace(
-          /[^a-zA-Z0-9_-]/g,
-          "_"
-        );
-
-
-    const ref =
-      db
-        .collection(
-          "serverFiles"
-        )
-        .doc(fileId);
-
-
-    batch.set(
-      ref,
-      {
-
-        owner,
-
-        serverId,
-
-        path:
-          relative,
-
-        type:
-          "file",
-
-        size:
-          file.size,
-
-        updatedAt:
-          Date.now()
-
-      },
-      {
-        merge:
-          true
-      }
-    );
-
-  }
-
-
-  if (
-    files.length
-  ) {
-
-    await batch.commit();
-
-  }
-
-}
-
-
-// ============================================================
-// WALK FILES
-// ============================================================
-
-async function walkFiles(
-  dir
-) {
-
-  const result = [];
-
-
-  async function walk(
-    current
-  ) {
-
-    const entries =
-      await fsp.readdir(
-        current,
+    const request =
+      await addDoc(
+        collection(
+          db,
+          "ramRequests"
+        ),
         {
-          withFileTypes:
-            true
+
+          owner: user.uid,
+
+          type: "purchase",
+
+          ram: UPGRADE_RAM,
+
+          amountCents:
+            UPGRADE_PRICE * 100,
+
+          status: "pending",
+
+          createdAt: Date.now()
+
         }
       );
 
 
-    for (
-      const entry of entries
-    ) {
-
-      // Don't index huge/world internals unnecessarily.
-
-      if (
-        entry.name === "logs"
-      ) {
-
-        continue;
-
-      }
-
-
-      const full =
-        path.join(
-          current,
-          entry.name
-        );
-
-
-      if (
-        entry.isDirectory()
-      ) {
-
-        await walk(
-          full
-        );
-
-      } else {
-
-        try {
-
-          const stat =
-            await fsp.stat(
-              full
-            );
-
-
-          result.push({
-
-            path:
-              full,
-
-            size:
-              stat.size
-
-          });
-
-        } catch {
-
-          // File may disappear while walking.
-
-        }
-
-      }
-
-    }
-
-  }
-
-
-  await walk(
-    dir
-  );
-
-
-  return result;
-
-}
-
-
-// ============================================================
-// PROCESS JOB
-// ============================================================
-
-async function processJob(
-  jobId,
-  job
-) {
-
-  if (
-    jobLocks.has(jobId)
-  ) {
-
-    return;
-
-  }
-
-
-  jobLocks.add(
-    jobId
-  );
-
-
-  try {
-
-    // --------------------------------------------------------
-    // Claim the job
-    // --------------------------------------------------------
-
-    await updateJob(
-      jobId,
-      {
-
-        status:
-          "processing",
-
-        processingAt:
-          Date.now(),
-
-        agent:
-          os.hostname()
-
-      }
+    console.log(
+      "RAM purchase request:",
+      request.id
     );
 
 
-    log(
-      `Processing job ${jobId}: ${job.type}`
-    );
-
-
-    // --------------------------------------------------------
-    // Execute
-    // --------------------------------------------------------
-
-    switch (
-      job.type
-    ) {
-
-      case "provision":
-
-        await provisionServer(
-          jobId,
-          job
-        );
-
-        break;
-
-
-      case "start":
-
-        await startServer(
-          jobId,
-          job
-        );
-
-        break;
-
-
-      case "stop":
-
-        await stopServer(
-          jobId,
-          job
-        );
-
-        break;
-
-
-      case "restart":
-
-        await restartServer(
-          jobId,
-          job
-        );
-
-        break;
-
-
-      default:
-
-        throw new Error(
-          `Unknown job type: ${job.type}`
-        );
-
-    }
-
-
-    // --------------------------------------------------------
-    // Complete
-    // --------------------------------------------------------
-
-    await updateJob(
-      jobId,
-      {
-
-        status:
-          "completed",
-
-        completedAt:
-          Date.now()
-
-      }
-    );
-
-
-    log(
-      `Job completed: ${jobId}`
+    showMessage(
+      $("purchaseMsg"),
+      "Purchase request created. Payment checkout will be connected here."
     );
 
 
   } catch (error) {
 
-    console.error(
-      `Job ${jobId} failed:`,
-      error
-    );
+    console.error(error);
 
-
-    await updateJob(
-      jobId,
-      {
-
-        status:
-          "failed",
-
-        error:
-          error.message,
-
-        completedAt:
-          Date.now()
-
-      }
-    );
-
-
-    if (
-      job.serverId
-    ) {
-
-      await updateServer(
-        job.serverId,
-        {
-
-          status:
-            "error",
-
-          console:
-            `Agent error: ${error.message}`,
-
-          updatedAt:
-            Date.now()
-
-        }
-      ).catch(
-        console.error
-      );
-
-    }
-
-  } finally {
-
-    jobLocks.delete(
-      jobId
+    showMessage(
+      $("purchaseMsg"),
+      friendlyError(error),
+      true
     );
 
   }
@@ -2048,274 +862,821 @@ async function processJob(
 
 
 // ============================================================
-// FIRESTORE JOB LISTENER
+// TEST PURCHASE
 // ============================================================
 
-function startJobListener() {
+$("testPurchase").onclick = async () => {
 
-  log(
-    "Connecting to Firestore jobs..."
-  );
+  const user =
+    auth.currentUser;
 
 
-  const queryRef =
-    db
-      .collection("jobs")
-      .where(
-        "status",
-        "==",
-        "pending"
+  if (!user) {
+
+    showMessage(
+      $("purchaseMsg"),
+      "You must be signed in.",
+      true
+    );
+
+    return;
+
+  }
+
+
+  const confirmed =
+    confirm(
+      "TEST PURCHASE\n\n" +
+      "This will simulate purchasing " +
+      "the +4 GB RAM upgrade.\n\n" +
+      "No money will be charged.\n\n" +
+      "Continue?"
+    );
+
+
+  if (!confirmed) return;
+
+
+  try {
+
+    const request =
+      await addDoc(
+        collection(
+          db,
+          "ramRequests"
+        ),
+        {
+
+          owner: user.uid,
+
+          type: "test",
+
+          ram: UPGRADE_RAM,
+
+          amountCents: 0,
+
+          status: "approved",
+
+          createdAt: Date.now(),
+
+          testPurchase: true
+
+        }
       );
 
 
-  queryRef.onSnapshot(
-    snapshot => {
+    // Give the test account the extra RAM.
 
-      log(
-        `Firestore listener active. Pending jobs: ${snapshot.size}`
+    const userRef =
+      doc(db, "users", user.uid);
+
+
+    const currentLimit =
+      Number(
+        currentProfile?.ramLimit ||
+        DEFAULT_RAM
       );
 
 
-      snapshot.docChanges()
-        .forEach(
-          change => {
-
-            if (
-              change.type !==
-              "added"
-            ) {
-
-              return;
-
-            }
+    const newLimit =
+      Math.max(
+        currentLimit,
+        UPGRADE_RAM
+      );
 
 
-            const jobId =
-              change.doc.id;
+    await updateDoc(
+      userRef,
+      {
+
+        ramLimit: newLimit,
+
+        lastTestPurchase:
+          Date.now()
+
+      }
+    );
 
 
-            const job =
-              change.doc.data();
+    showMessage(
+      $("purchaseMsg"),
+      "✅ Test purchase complete! 4 GB RAM is now unlocked."
+    );
 
 
-            processJob(
-              jobId,
-              job
-            );
+    $("ramRestriction")
+      ?.classList
+      .add("hidden");
+
+
+  } catch (error) {
+
+    console.error(
+      "Test purchase error:",
+      error
+    );
+
+
+    showMessage(
+      $("purchaseMsg"),
+      friendlyError(error),
+      true
+    );
+
+  }
+
+};
+
+
+// ============================================================
+// CREATE SERVER
+// ============================================================
+
+$("createForm").onsubmit =
+  async event => {
+
+    event.preventDefault();
+
+
+    const user =
+      auth.currentUser;
+
+
+    if (!user) {
+
+      showMessage(
+        $("purchaseMsg"),
+        "You must be signed in.",
+        true
+      );
+
+      return;
+
+    }
+
+
+    const name =
+      $("serverNameInput")
+        .value
+        .trim();
+
+
+    const version =
+      $("versionInput").value;
+
+
+    const ram =
+      Number(
+        $("ramInput").value
+      );
+
+
+    if (!name) {
+
+      alert(
+        "Enter a server name."
+      );
+
+      return;
+
+    }
+
+
+    // --------------------------------------------------------
+    // Check 4 GB restriction
+    // --------------------------------------------------------
+
+    const ramLimit =
+      Number(
+        currentProfile?.ramLimit ||
+        DEFAULT_RAM
+      );
+
+
+    if (
+      ram === UPGRADE_RAM &&
+      ramLimit < UPGRADE_RAM
+    ) {
+
+      $("ramRestriction")
+        .classList
+        .remove("hidden");
+
+
+      alert(
+        "4 GB RAM is restricted.\n\n" +
+        "Purchase the $3 RAM upgrade first."
+      );
+
+
+      return;
+
+    }
+
+
+    // --------------------------------------------------------
+    // Get current servers
+    // --------------------------------------------------------
+
+    const serverCollection =
+      collection(db, "servers");
+
+
+    const serverQuery =
+      query(
+        serverCollection,
+        where(
+          "owner",
+          "==",
+          user.uid
+        )
+      );
+
+
+    // We use a temporary snapshot listener-like read.
+    // Firestore's modular API supports getDocs, but the
+    // listener already keeps the UI synchronized.
+    //
+    // Importing getDocs below would be another option.
+    // For now, use the current rendered server cards to
+    // prevent accidental duplicate submissions.
+    //
+
+
+    const existingServers =
+      await getOwnedServers(user.uid);
+
+
+    const activeServers =
+      existingServers.filter(
+        server =>
+          server.status === "online" ||
+          server.status === "starting" ||
+          server.status === "provisioning"
+      );
+
+
+    // --------------------------------------------------------
+    // Maximum 3 servers
+    // --------------------------------------------------------
+
+    const maxServers =
+      Number(
+        currentProfile?.maxServers ||
+        MAX_SERVERS
+      );
+
+
+    if (
+      activeServers.length >=
+      maxServers
+    ) {
+
+      alert(
+        `You can only have ${maxServers} servers at a time.`
+      );
+
+      return;
+
+    }
+
+
+    // --------------------------------------------------------
+    // RAM calculation
+    // --------------------------------------------------------
+
+    const usedRam =
+      activeServers.reduce(
+        (total, server) =>
+          total +
+          Number(server.ram || 0),
+        0
+      );
+
+
+    if (
+      usedRam + ram >
+      ramLimit
+    ) {
+
+      const available =
+        Math.max(
+          0,
+          (ramLimit - usedRam) /
+          1024
+        );
+
+
+      alert(
+        `Not enough RAM available.\n\n` +
+        `Available: ${available} GB\n` +
+        `Requested: ${ram / 1024} GB`
+      );
+
+
+      return;
+
+    }
+
+
+    // --------------------------------------------------------
+    // Create server document
+    // --------------------------------------------------------
+
+    try {
+
+      const serverRef =
+        await addDoc(
+          collection(
+            db,
+            "servers"
+          ),
+          {
+
+            name,
+
+            version,
+
+            ram,
+
+            owner: user.uid,
+
+            status:
+              "provisioning",
+
+            address: "",
+
+            console:
+              "Waiting for the hosting agent…",
+
+            createdAt:
+              Date.now()
 
           }
         );
 
-    },
 
-    error => {
+      const serverId =
+        serverRef.id;
 
-      console.error(
-        "Firestore listener error:",
-        error
+
+      // ------------------------------------------------------
+      // CREATE FIRESTORE JOB
+      //
+      // THIS IS THE IMPORTANT FIX:
+      // status MUST BE "pending"
+      // ------------------------------------------------------
+
+      await addDoc(
+        collection(db, "jobs"),
+        {
+
+          owner: user.uid,
+
+          serverId,
+
+          type: "provision",
+
+          status: "pending",
+
+          createdAt: Date.now()
+
+        }
       );
 
 
-      // Retry.
+      $("createDialog").close();
 
-      setTimeout(
-        startJobListener,
-        5000
+
+      $("serverNameInput").value = "";
+
+
+      $("ramInput").value =
+        "1024";
+
+
+      $("ramRestriction")
+        .classList
+        .add("hidden");
+
+
+      console.log(
+        "Server created:",
+        serverId
       );
 
-    }
-  );
-
-}
-
-
-// ============================================================
-// PERIODIC FILE INDEX
-// ============================================================
-
-async function refreshRunningServerFiles() {
-
-  for (
-    const [
-      serverId,
-      state
-    ] of processes
-  ) {
-
-    try {
-
-      const snap =
-        await db
-          .collection("servers")
-          .doc(serverId)
-          .get();
-
-
-      if (!snap.exists) {
-
-        continue;
-
-      }
-
-
-      const server =
-        snap.data();
-
-
-      await indexFiles(
-        serverId,
-        server.owner,
-        serverDirectory(
-          serverId
-        )
-      );
 
     } catch (error) {
 
       console.error(
-        "File indexing error:",
+        "Create server error:",
         error
       );
 
-    }
 
-  }
-
-}
-
-
-// ============================================================
-// SHUTDOWN
-// ============================================================
-
-async function shutdown() {
-
-  log(
-    "Agent shutting down..."
-  );
-
-
-  for (
-    const [
-      serverId,
-      state
-    ] of processes
-  ) {
-
-    try {
-
-      state.process.stdin.write(
-        "stop\n"
+      alert(
+        "Create server error:\n\n" +
+        friendlyError(error)
       );
 
-    } catch {
-
-      // Ignore.
-
     }
 
-  }
+  };
 
 
-  setTimeout(
-    () => process.exit(0),
-    10000
+// ============================================================
+// GET OWNED SERVERS
+// ============================================================
+
+async function getOwnedServers(uid) {
+
+  // This imports getDocs dynamically so the rest of the
+  // application can load normally.
+
+  const {
+    getDocs
+  } = await import(
+    "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js"
+  );
+
+
+  const q =
+    query(
+      collection(
+        db,
+        "servers"
+      ),
+      where(
+        "owner",
+        "==",
+        uid
+      )
+    );
+
+
+  const snapshot =
+    await getDocs(q);
+
+
+  return snapshot.docs.map(
+    serverDoc => ({
+
+      id: serverDoc.id,
+
+      ...serverDoc.data()
+
+    })
   );
 
 }
 
 
-process.on(
-  "SIGINT",
-  shutdown
-);
+// ============================================================
+// OPEN SERVER
+// ============================================================
+
+async function openServer(
+  serverId,
+  server
+) {
+
+  currentServerId =
+    serverId;
 
 
-process.on(
-  "SIGTERM",
-  shutdown
-);
+  $("serverPanel")
+    .classList
+    .remove("hidden");
+
+
+  $("serverName")
+    .textContent =
+      server.name ||
+      serverId;
+
+
+  $("serverAddress")
+    .textContent =
+      server.address ||
+      "Waiting for agent…";
+
+
+  $("serverStatus")
+    .textContent =
+      server.status ||
+      "offline";
+
+
+  if (unsubscribeCurrentServer) {
+
+    unsubscribeCurrentServer();
+
+  }
+
+
+  const serverRef =
+    doc(
+      db,
+      "servers",
+      serverId
+    );
+
+
+  unsubscribeCurrentServer =
+    onSnapshot(
+      serverRef,
+      snapshot => {
+
+        if (!snapshot.exists()) {
+
+          $("serverStatus")
+            .textContent =
+              "deleted";
+
+          return;
+
+        }
+
+
+        const data =
+          snapshot.data();
+
+
+        $("serverName")
+          .textContent =
+            data.name ||
+            serverId;
+
+
+        $("serverAddress")
+          .textContent =
+            data.address ||
+            "Waiting for agent…";
+
+
+        $("serverStatus")
+          .textContent =
+            data.status ||
+            "offline";
+
+
+        $("console")
+          .textContent =
+            data.console ||
+            "Waiting for the hosting agent…";
+
+      },
+
+      error => {
+
+        console.error(
+          "Server listener:",
+          error
+        );
+
+      }
+    );
+
+
+  await refreshFiles();
+
+}
 
 
 // ============================================================
-// START
+// START / RESTART / STOP
 // ============================================================
 
-(async () => {
+document
+  .querySelectorAll("[data-action]")
+  .forEach(button => {
+
+    button.onclick =
+      async () => {
+
+        const user =
+          auth.currentUser;
+
+
+        if (
+          !user ||
+          !currentServerId
+        ) {
+
+          return;
+
+        }
+
+
+        const type =
+          button.dataset.action;
+
+
+        try {
+
+          // --------------------------------------------------
+          // Create a Firestore job.
+          //
+          // status: "pending" is required by the agent.
+          // --------------------------------------------------
+
+          const job =
+            await addDoc(
+              collection(
+                db,
+                "jobs"
+              ),
+              {
+
+                owner:
+                  user.uid,
+
+                serverId:
+                  currentServerId,
+
+                type,
+
+                status:
+                  "pending",
+
+                createdAt:
+                  Date.now()
+
+              }
+            );
+
+
+          console.log(
+            `Created ${type} job:`,
+            job.id
+          );
+
+
+          // Give the UI immediate feedback.
+
+          if (
+            type === "start"
+          ) {
+
+            await updateDoc(
+              doc(
+                db,
+                "servers",
+                currentServerId
+              ),
+              {
+
+                status:
+                  "starting"
+
+              }
+            );
+
+          }
+
+
+        } catch (error) {
+
+          console.error(
+            `${type} error:`,
+            error
+          );
+
+
+          alert(
+            `${type} error:\n\n` +
+            friendlyError(error)
+          );
+
+        }
+
+      };
+
+  });
+
+
+// ============================================================
+// FILES
+// ============================================================
+
+$("refreshFiles").onclick =
+  refreshFiles;
+
+
+async function refreshFiles() {
+
+  const user =
+    auth.currentUser;
+
+
+  if (
+    !user ||
+    !currentServerId
+  ) {
+
+    return;
+
+  }
+
+
+  const {
+    getDocs
+  } = await import(
+    "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js"
+  );
+
 
   try {
 
-    await ensureDirectories();
-
-
-    const java =
-      await findJava();
-
-
-    if (java) {
-
-      log(
-        `Java detected: ${java}`
+    const q =
+      query(
+        collection(
+          db,
+          "serverFiles"
+        ),
+        where(
+          "owner",
+          "==",
+          user.uid
+        ),
+        where(
+          "serverId",
+          "==",
+          currentServerId
+        )
       );
 
-    } else {
 
-      console.warn(
-        "WARNING: Java was not detected yet."
+    const snapshot =
+      await getDocs(q);
+
+
+    const files =
+      snapshot.docs.map(
+        fileDoc => ({
+          id: fileDoc.id,
+          ...fileDoc.data()
+        })
       );
 
-      console.warn(
-        "Minecraft servers will fail to start until Java is installed."
-      );
+
+    $("files").innerHTML = "";
+
+
+    if (!files.length) {
+
+      $("files").innerHTML =
+        `<div class="muted">
+          No file index reported yet.
+        </div>`;
+
+      return;
 
     }
 
 
-    log(
-      "LocalNode Agent is ready."
-    );
+    for (
+      const file of files
+    ) {
+
+      const div =
+        document.createElement(
+          "div"
+        );
 
 
-    log(
-      `Machine: ${os.hostname()}`
-    );
+      div.className =
+        "file";
 
 
-    log(
-      `Server directory: ${CONFIG.serversDir}`
-    );
+      div.textContent =
+        `${file.path || file.name || file.id}` +
+        ` — ${file.type || "file"}` +
+        (
+          file.size
+            ? ` — ${file.size} bytes`
+            : ""
+        );
 
 
-    log(
-      `Public host: ${CONFIG.publicHost}`
-    );
+      $("files")
+        .appendChild(div);
 
-
-    log(
-      "Waiting for Firestore jobs..."
-    );
-
-
-    startJobListener();
-
-
-    // Periodic file indexing.
-
-    setInterval(
-      refreshRunningServerFiles,
-      CONFIG.fileIndexInterval
-    );
-
+    }
 
   } catch (error) {
 
     console.error(
-      "Agent startup failed:",
+      "File loading error:",
       error
     );
 
-    process.exit(1);
+
+    $("files").innerHTML =
+      `<div class="muted">
+        Unable to load files.
+      </div>`;
 
   }
 
-})();
+}
