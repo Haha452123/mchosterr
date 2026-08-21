@@ -1,82 +1,35 @@
 <!doctype html>
 <html lang="en">
-
-<head> 
+<head>
   <meta charset="utf-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
-
-  <title>LocalNode Server Hosting</title>
-
-  <link
-    rel="stylesheet"
-    href="./style.css"
-  >
-
-  <link
-    rel="icon"
-    href="data:,"
-  >
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>LocalNode</title>
+  <link rel="stylesheet" href="./style.css">
 </head>
 
-
 <body>
-
 <main class="wrap">
 
-
-  <!-- =====================================================
-       HEADER
-  ====================================================== -->
-
   <header class="top">
-
     <div>
-
-      <div class="brand">
-        LocalNode
-      </div>
-
-      <div class="muted">
-        Minecraft Server Hosting
-      </div>
-
+      <div class="brand">LocalNode</div>
+      <div class="muted">Minecraft Hosting</div>
     </div>
 
-
-    <button
-      id="logout"
-      class="secondary hidden"
-      type="button"
-    >
+    <button id="logout" class="secondary hidden">
       Log out
     </button>
-
   </header>
 
+  <!-- AUTH -->
 
+  <section id="auth" class="card auth">
 
-  <!-- =====================================================
-       LOGIN / REGISTER
-  ====================================================== -->
-
-  <section
-    id="auth"
-    class="card auth"
-  >
-
-    <h1 id="authTitle">
-      Sign in
-    </h1>
-
+    <h1 id="authTitle">Sign in</h1>
 
     <p class="muted">
-      Manage your Minecraft servers from your browser.
+      Manage your Minecraft servers.
     </p>
-
 
     <form id="authForm">
 
@@ -84,260 +37,69 @@
         id="email"
         type="email"
         placeholder="Email"
-        autocomplete="email"
         required
       >
-
 
       <input
         id="password"
         type="password"
         placeholder="Password"
         minlength="6"
-        autocomplete="current-password"
         required
       >
 
-
-      <button
-        id="authSubmit"
-        type="submit"
-      >
+      <button id="authSubmit" type="submit">
         Sign in
       </button>
 
     </form>
 
-
-    <button
-      id="toggleAuth"
-      class="linkbtn"
-      type="button"
-    >
+    <button id="toggleAuth" class="linkbtn">
       Need an account? Register
     </button>
 
-
-    <div
-      id="authMsg"
-      class="msg"
-      role="alert"
-    ></div>
+    <div id="authMsg" class="msg"></div>
 
   </section>
 
 
+  <!-- APP -->
 
-  <!-- =====================================================
-       MAIN APPLICATION
-  ====================================================== -->
-
-  <section
-    id="app"
-    class="hidden"
-  >
-
-
-    <!-- =================================================
-         DASHBOARD HEADER
-    ================================================== -->
+  <section id="app" class="hidden">
 
     <div class="row between">
 
       <div>
-
-        <h1>
-          Dashboard
-        </h1>
-
-
-        <div
-          id="who"
-          class="muted"
-        ></div>
-
+        <h1>Dashboard</h1>
+        <div id="who" class="muted"></div>
       </div>
 
-
-      <button
-        id="newServer"
-        type="button"
-      >
+      <button id="newServer">
         + Create server
       </button>
 
     </div>
 
 
+    <div id="servers" class="grid"></div>
 
-    <!-- =================================================
-         ACCOUNT RESOURCES
-    ================================================== -->
 
-    <section
-      class="card"
-      id="resources"
-    >
+    <!-- SERVER -->
+
+    <section id="serverPanel" class="card hidden">
 
       <div class="row between">
 
         <div>
-
-          <h2>
-            Hosting
-          </h2>
-
-          <div class="muted">
-            Your current resource limits
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <div class="resource-grid">
-
-
-        <!-- RAM -->
-
-        <div class="resource">
-
-          <div class="resource-title">
-            RAM
-          </div>
-
-
-          <div
-            id="ramUsage"
-            class="resource-value"
-          >
-            0 GB / 3 GB
-          </div>
-
-
-          <div class="progress">
-
-            <div
-              id="ramProgress"
-              class="progress-bar"
-              style="width:0%"
-            ></div>
-
-          </div>
-
-        </div>
-
-
-
-        <!-- SERVERS -->
-
-        <div class="resource">
-
-          <div class="resource-title">
-            Online servers
-          </div>
-
-
-          <div
-            id="serverUsage"
-            class="resource-value"
-          >
-            0 / 3
-          </div>
-
-
-          <div class="progress">
-
-            <div
-              id="serverProgress"
-              class="progress-bar"
-              style="width:0%"
-            ></div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- Test purchase lives here for testing.
-           It does NOT charge money. -->
-
-      <div
-        class="purchase-test"
-        style="margin-top:16px;"
-      >
-
-        <button
-          id="testPurchase"
-          class="secondary"
-          type="button"
-        >
-          🧪 Test purchase: unlock 4 GB
-        </button>
-
-
-        <div
-          class="muted"
-          style="margin-top:6px;"
-        >
-          Testing only — no money is charged.
-        </div>
-
-      </div>
-
-
-      <div
-        id="purchaseMsg"
-        class="msg"
-        role="status"
-      ></div>
-
-    </section>
-
-
-
-    <!-- =================================================
-         SERVER LIST
-    ================================================== -->
-
-    <div
-      id="servers"
-      class="grid"
-    ></div>
-
-
-
-    <!-- =================================================
-         SERVER PANEL
-    ================================================== -->
-
-    <section
-      id="serverPanel"
-      class="card hidden"
-    >
-
-
-      <div class="row between">
-
-        <div>
-
-          <h2 id="serverName">
-            Server
-          </h2>
-
+          <h2 id="serverName">Server</h2>
 
           <div
             id="serverAddress"
             class="muted"
           >
-            Waiting for agent…
+            Not online
           </div>
-
         </div>
-
 
         <span
           id="serverStatus"
@@ -349,32 +111,19 @@
       </div>
 
 
-
-      <!-- SERVER CONTROLS -->
-
       <div class="actions">
 
-
-        <button
-          data-action="start"
-          type="button"
-        >
+        <button data-action="start">
           Start
         </button>
 
-
-        <button
-          data-action="restart"
-          type="button"
-        >
+        <button data-action="restart">
           Restart
         </button>
-
 
         <button
           data-action="stop"
           class="danger"
-          type="button"
         >
           Stop
         </button>
@@ -382,32 +131,48 @@
       </div>
 
 
-
       <!-- CONSOLE -->
 
-      <h3>
-        Console
-      </h3>
+      <h3>Console</h3>
+
+      <pre id="console" class="console">
+Waiting for the hosting agent…
+      </pre>
 
 
-      <pre id="console">Waiting for the hosting agent…</pre>
+      <!-- COMMAND LINE -->
 
+      <h3>Command line</h3>
+
+      <form id="commandForm" class="commandbar">
+
+        <input
+          id="commandInput"
+          placeholder="say Hello"
+          maxlength="1000"
+          autocomplete="off"
+          required
+        >
+
+        <button type="submit">
+          Send
+        </button>
+
+      </form>
+
+      <div id="commandMsg" class="msg"></div>
 
 
       <!-- FILES -->
 
-      <h3>
-        Files
-      </h3>
-
+      <h3>Files</h3>
 
       <div class="filebar">
 
         <input
           id="filePath"
-          placeholder="plugins/example.jar or server.properties"
+          placeholder="server.properties"
         >
-
 
         <button
           id="refreshFiles"
@@ -419,11 +184,7 @@
 
       </div>
 
-
-      <div
-        id="files"
-        class="files"
-      ></div>
+      <div id="files" class="files"></div>
 
     </section>
 
@@ -432,10 +193,7 @@
 </main>
 
 
-
-<!-- =======================================================
-     CREATE SERVER DIALOG
-======================================================== -->
+<!-- CREATE SERVER -->
 
 <dialog id="createDialog">
 
@@ -445,66 +203,26 @@
     class="dialog"
   >
 
-
-    <h2>
-      Create Minecraft server
-    </h2>
-
-
-
-    <!-- SERVER NAME -->
-
-    <label
-      for="serverNameInput"
-      class="muted"
-    >
-      Server name
-    </label>
-
+    <h2>Create Minecraft server</h2>
 
     <input
       id="serverNameInput"
-      placeholder="My Minecraft Server"
+      placeholder="Server name"
       maxlength="32"
-      autocomplete="off"
       required
     >
-
-
-
-    <!-- VERSION -->
-
-    <label
-      for="versionInput"
-      class="muted"
-    >
-      Minecraft version
-    </label>
-
 
     <select id="versionInput">
 
       <option value="1.21.11">
-        1.21.11
+        Minecraft 1.21.11
       </option>
 
-
       <option value="1.21.10">
-        1.21.10
+        Minecraft 1.21.10
       </option>
 
     </select>
-
-
-
-    <!-- RAM -->
-
-    <label
-      for="ramInput"
-      class="muted"
-    >
-      Server RAM
-    </label>
 
 
     <select id="ramInput">
@@ -513,96 +231,34 @@
         1 GB RAM
       </option>
 
-
       <option value="2048">
         2 GB RAM
       </option>
-
 
       <option value="3072">
         3 GB RAM
       </option>
 
-
-      <!-- This option is intentionally restricted.
-           app.js handles the click/change prompt. -->
-
-      <option
-        value="4096"
-        id="ram4Option"
-      >
-        4 GB RAM — RESTRICTED
+      <option value="4096">
+        4 GB RAM — Restricted
       </option>
 
     </select>
 
 
-
-    <!-- 4 GB RESTRICTION MESSAGE -->
-
-    <div
-      id="ramRestriction"
-      class="card hidden"
-      style="margin-top:10px;"
-    >
-
-      <strong>
-        🔒 4 GB RAM is restricted
-      </strong>
+    <div id="ramNotice" class="msg"></div>
 
 
-      <div
-        class="muted"
-        style="margin-top:5px;"
-      >
-        You need the 4 GB RAM upgrade to use this
-        option.
-      </div>
-
+    <div class="row end">
 
       <button
-        id="purchaseRam"
-        type="button"
-        style="margin-top:10px;"
-      >
-        Unlock 4 GB — $3
-      </button>
-
-    </div>
-
-
-
-    <!-- PURCHASE MESSAGE -->
-
-    <div
-      id="purchaseMsg"
-      class="msg"
-      role="status"
-    ></div>
-
-
-
-    <!-- BUTTONS -->
-
-    <div
-      class="row end"
-      style="margin-top:18px;"
-    >
-
-      <button
-        id="cancelCreate"
-        type="button"
+        value="cancel"
         class="secondary"
       >
         Cancel
       </button>
 
-
-      <button
-        id="createServerSubmit"
-        type="submit"
-        value="default"
-      >
+      <button id="createServerButton">
         Create
       </button>
 
@@ -612,18 +268,7 @@
 
 </dialog>
 
-
-
-<!-- =======================================================
-     FIREBASE APPLICATION
-======================================================== -->
-
-<script
-  type="module"
-  src="./app.js"
-></script>
-
+<script type="module" src="./app.js"></script>
 
 </body>
-
 </html>
