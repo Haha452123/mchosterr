@@ -1751,3 +1751,556 @@ function showFirebaseError(
   }
 
 }
+/* ============================================================
+   MODRINTH FABRIC MOD SEARCH
+   ============================================================ */
+
+const MODRINTH_API = "https://api.modrinth.com/v2";
+
+
+$("modrinthSearchForm")?.addEventListener(
+  "submit",
+  async event => {
+
+    event.preventDefault();
+
+    const input =
+      $("modrinthSearch");
+
+    const version =
+      $("modrinthVersion");
+
+    const results =
+      $("modrinthResults");
+
+    const message =
+      $("modrinthMsg");
+
+    if (!input || !results) {
+      return;
+    }
+
+    const search =
+      input.value.trim();
+
+    if (!search) {
+
+      showMessage(
+        message,
+        "Enter a mod to search for.",
+        "error"
+      );
+
+      return;
+    }
+
+    results.innerHTML = `
+      <div class="modrinth-loading">
+        Searching Modrinth…
+      </div>
+    `;
+
+    showMessage(message, "");
+
+    try {
+
+      /*
+       * Modrinth facets:
+       *
+       * project_type:mod
+       * categories:fabric
+       * versions:<selected Minecraft version>
+       *
+       * This prevents Forge/NeoForge mods and
+       * non-mod project types from appearing.
+       */
+
+      const facets = JSON.stringify([
+        ["project_type:mod"],
+        ["categories:fabric"],
+        [`versions:${version.value}`]
+      ]);
+
+      const url =
+        new URL(
+          `${MODRINTH_API}/search`
+        );
+
+      url.searchParams.set(
+        "query",
+        search
+      );
+
+      url.searchParams.set(
+        "facets",
+        facets
+      );
+
+      url.searchParams.set(
+        "limit",
+        "20"
+      );
+
+      url.searchParams.set(
+        "index",
+        "relevance"
+      );
+
+      const response =
+        await fetch(url);
+
+      if (!response.ok) {
+
+        throw new Error(
+          `Modrinth returned HTTP ${response.status}.`
+        );
+
+      }
+
+      const data =
+        await response.json();
+
+      const projects =
+        data.hits || [];
+
+      if (!projects.length) {
+
+        results.innerHTML = `
+          <div class="modrinth-empty">
+            No Fabric mods found for
+            Minecraft ${escapeHtml(version.value)}.
+          </div>
+        `;
+
+        return;
+      }
+
+      results.innerHTML = "";
+
+      /*
+       * Fetch the latest compatible Fabric version
+       * for each search result so the Download button
+       * points to an actual .jar.
+       */
+
+      for (const project of projects) {
+
+        const card =
+          await createModrinthCard(
+            project,
+            version.value
+          );
+
+        results.appendChild(card);
+
+      }
+
+    } catch (error) {
+
+      console.error(
+        "Modrinth search error:",
+        error
+      );
+
+      results.innerHTML = `
+        <div class="modrinth-empty">
+          Failed to search Modrinth.
+          Try again in a moment.
+        </div>
+      `;
+
+    }
+
+  }
+);
+
+
+/* ============================================================
+   MODRINTH RESULT CARD
+   ============================================================ */
+
+async function createModrinthCard(
+  project,
+  minecraftVersion
+) {
+
+  const card =
+    document.createElement("article");
+
+  card.className =
+    "modrinth-card";
+
+  const icon =
+    document.createElement("img");
+
+  icon.className =
+    "modrinth-icon";
+
+  icon.alt =
+    `${project.title || "Mod"} icon`;
+
+  icon.loading =
+    "lazy";
+
+  icon.src =
+    project.icon_url || "";
+
+  const info =
+    document.createElement("div");
+
+  info.className =
+    "modrinth-info";
+
+  const title =
+    document.createElement("h3");
+
+  title.className =
+    "modrinth-title";
+
+  const projectLink =
+    document.createElement("a");
+
+  projectLink.href =
+    `https://modrinth.com/mod/${encodeURIComponent(
+      project.slug || project.project_id
+    )}`;
+
+  projectLink.target =
+    "_blank";
+
+  projectLink.rel =
+    "noopener noreferrer";
+
+  projectLink.textContent =
+    project.title ||
+    project.slug ||
+    "Unknown mod";
+
+  title.appendChild(
+    projectLink
+  );
+
+
+  const description =
+    document.createElement("div");
+
+  description.className =
+    "modrinth-description";
+
+  description.textContent =
+    project.description ||
+    "No description available.";
+
+
+  const meta =
+    document.createElement("div");
+
+  meta.className =
+    "modrinth-meta";
+
+
+  const fabricTag =
+    document.createElement("span");
+
+  fabricTag.className =
+    "modrinth-tag";
+
+  fabricTag.textContent =
+    "Fabric";
+
+  meta.appendChild(
+    fabricTag
+  );
+
+
+  const versionTag =
+    document.createElement("span");
+
+  versionTag.className =
+    "modrinth-tag";
+
+  versionTag.textContent =
+    `Minecraft ${minecraftVersion}`;
+
+  meta.appendChild(
+    versionTag
+  );
+
+
+  const downloadsTag =
+    document.createElement("span");
+
+  downloadsTag.className =
+    "modrinth-tag";
+
+  downloadsTag.textContent =
+    `${formatDownloads(
+      project.downloads
+    )} downloads`;
+
+  meta.appendChild(
+    downloadsTag
+  );
+
+
+  info.append(
+    title,
+    description,
+    meta
+  );
+
+
+  const actions =
+    document.createElement("div");
+
+  actions.className =
+    "modrinth-actions";
+
+
+  const download =
+    document.createElement("a");
+
+  download.className =
+    "modrinth-download";
+
+  download.textContent =
+    "Download .jar";
+
+  download.target =
+    "_blank";
+
+  download.rel =
+    "noopener noreferrer";
+
+  download.textContent =
+    "Loading…";
+
+  actions.appendChild(
+    download
+  );
+
+
+  const modrinth =
+    document.createElement("a");
+
+  modrinth.className =
+    "modrinth-project";
+
+  modrinth.textContent =
+    "Modrinth";
+
+  modrinth.href =
+    projectLink.href;
+
+  modrinth.target =
+    "_blank";
+
+  modrinth.rel =
+    "noopener noreferrer";
+
+  actions.appendChild(
+    modrinth
+  );
+
+
+  card.append(
+    icon,
+    info,
+    actions
+  );
+
+
+  /*
+   * Get a compatible Fabric release.
+   */
+
+  try {
+
+    const versionUrl =
+      new URL(
+        `${MODRINTH_API}/project/` +
+        `${encodeURIComponent(
+          project.project_id
+        )}/version`
+      );
+
+    versionUrl.searchParams.set(
+      "loaders",
+      JSON.stringify(["fabric"])
+    );
+
+    versionUrl.searchParams.set(
+      "game_versions",
+      JSON.stringify([minecraftVersion])
+    );
+
+    versionUrl.searchParams.set(
+      "include_changelog",
+      "false"
+    );
+
+
+    const response =
+      await fetch(versionUrl);
+
+    if (!response.ok) {
+      throw new Error(
+        `Version lookup failed: ${response.status}`
+      );
+    }
+
+
+    const versions =
+      await response.json();
+
+
+    /*
+     * Prefer a release version.
+     */
+
+    const compatible =
+      versions.find(
+        version =>
+          version.version_type ===
+          "release" &&
+          version.status ===
+          "listed"
+      ) ||
+      versions.find(
+        version =>
+          version.status ===
+          "listed"
+      );
+
+
+    if (!compatible) {
+
+      download.textContent =
+        "No compatible release";
+
+      download.removeAttribute(
+        "href"
+      );
+
+      download.style.opacity =
+        "0.55";
+
+      return card;
+    }
+
+
+    /*
+     * Find the primary file.
+     */
+
+    const primaryFile =
+      compatible.files?.find(
+        file =>
+          file.primary === true
+      ) ||
+      compatible.files?.find(
+        file =>
+          file.filename
+            ?.toLowerCase()
+            .endsWith(".jar")
+      );
+
+
+    if (!primaryFile) {
+
+      download.textContent =
+        "No .jar available";
+
+      download.removeAttribute(
+        "href"
+      );
+
+      download.style.opacity =
+        "0.55";
+
+      return card;
+    }
+
+
+    download.href =
+      primaryFile.url;
+
+    download.download =
+      primaryFile.filename;
+
+    download.textContent =
+      "Download .jar";
+
+
+  } catch (error) {
+
+    console.error(
+      "Modrinth version lookup:",
+      error
+    );
+
+    download.textContent =
+      "Download unavailable";
+
+    download.removeAttribute(
+      "href"
+    );
+
+    download.style.opacity =
+      "0.55";
+
+  }
+
+
+  return card;
+
+}
+
+
+/* ============================================================
+   DOWNLOAD FORMATTER
+   ============================================================ */
+
+function formatDownloads(
+  value
+) {
+
+  const number =
+    Number(value || 0);
+
+  if (
+    number >=
+    1_000_000_000
+  ) {
+
+    return (
+      number / 1_000_000_000
+    ).toFixed(1) + "B";
+
+  }
+
+  if (
+    number >=
+    1_000_000
+  ) {
+
+    return (
+      number / 1_000_000
+    ).toFixed(1) + "M";
+
+  }
+
+  if (
+    number >=
+    1_000
+  ) {
+
+    return (
+      number / 1_000
+    ).toFixed(1) + "K";
+
+  }
+
+  return String(number);
+
+}
