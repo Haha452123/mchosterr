@@ -3,7 +3,7 @@ import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged,
   ref, set, get, update, push, remove, onValue, off, serverTimestamp,
 } from './firebase-init.js';
-
+ 
 const state = {
   uid: null,
   profile: null,        // { username, role, parentId }
