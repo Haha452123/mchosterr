@@ -1751,3 +1751,548 @@ function showFirebaseError(
   }
 
 }
+/* ============================================================
+   MODRINTH PAPER PLUGIN SEARCH
+   ============================================================ */
+
+const MODRINTH_API = "https://api.modrinth.com/v2";
+
+$("modrinthSearchForm")?.addEventListener(
+  "submit",
+  async (event) => {
+    event.preventDefault();
+
+    const searchInput = $("modrinthSearch");
+    const versionInput = $("modrinthVersion");
+    const results = $("modrinthResults");
+    const message = $("modrinthMsg");
+
+    if (!searchInput || !results) return;
+
+    const search = searchInput.value.trim();
+    const minecraftVersion = versionInput?.value || "1.21.11";
+
+    if (!search) {
+      showMessage(
+        message,
+        "Enter a plugin to search for.",
+        "error"
+      );
+      return;
+    }
+
+    results.innerHTML = `
+      <div class="muted">
+        Searching Modrinth...
+      </div>
+    `;
+
+    try {
+      /*
+       * Your servers are Paper, so ONLY search for
+       * Modrinth projects whose project type is "plugin".
+       *
+       * We also filter to the selected Minecraft version.
+       */
+
+      const facets = JSON.stringify([
+        ["project_type:plugin"],
+        [`versions:${minecraftVersion}`]
+      ]);
+
+      const url = new URL(
+        `${MODRINTH_API}/search`
+      );
+
+      url.searchParams.set(
+        "query",
+        search
+      );
+
+      url.searchParams.set(
+        "facets",
+        facets
+      );
+
+      url.searchParams.set(
+        "limit",
+        "20"
+      );
+
+      url.searchParams.set(
+        "index",
+        "relevance"
+      );
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(
+          `Modrinth returned HTTP ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+
+      const projects = data.hits || [];
+
+      if (!projects.length) {
+        results.innerHTML = `
+          <div class="muted">
+            No Paper plugins found for
+            Minecraft ${escapeHtml(minecraftVersion)}.
+          </div>
+        `;
+        return;
+      }
+
+      results.innerHTML = "";
+
+      for (const project of projects) {
+        const card =
+          await createModrinthPluginCard(
+            project,
+            minecraftVersion
+          );
+
+        results.appendChild(card);
+      }
+
+    } catch (error) {
+      console.error(
+        "Modrinth search error:",
+        error
+      );
+
+      results.innerHTML = `
+        <div class="muted">
+          Failed to search Modrinth.
+          Try again in a moment.
+        </div>
+      `;
+    }
+  }
+);
+
+
+/* ============================================================
+   MODRINTH PLUGIN CARD
+   ============================================================ */
+
+async function createModrinthPluginCard(
+  project,
+  minecraftVersion
+) {
+  const card =
+    document.createElement("article");
+
+  card.className =
+    "modrinth-card";
+
+  const icon =
+    document.createElement("img");
+
+  icon.className =
+    "modrinth-icon";
+
+  icon.alt =
+    `${project.title || "Plugin"} icon`;
+
+  icon.loading =
+    "lazy";
+
+  if (project.icon_url) {
+    icon.src =
+      project.icon_url;
+  }
+
+  const info =
+    document.createElement("div");
+
+  info.className =
+    "modrinth-info";
+
+  const title =
+    document.createElement("h3");
+
+  title.className =
+    "modrinth-title";
+
+  const projectLink =
+    document.createElement("a");
+
+  projectLink.href =
+    `https://modrinth.com/plugin/${
+      encodeURIComponent(
+        project.slug ||
+        project.project_id
+      )
+    }`;
+
+  projectLink.target =
+    "_blank";
+
+  projectLink.rel =
+    "noopener noreferrer";
+
+  projectLink.textContent =
+    project.title ||
+    project.slug ||
+    "Unknown plugin";
+
+  title.appendChild(
+    projectLink
+  );
+
+  const description =
+    document.createElement("div");
+
+  description.className =
+    "modrinth-description";
+
+  description.textContent =
+    project.description ||
+    "No description available.";
+
+  const meta =
+    document.createElement("div");
+
+  meta.className =
+    "modrinth-meta";
+
+  const typeTag =
+    document.createElement("span");
+
+  typeTag.className =
+    "modrinth-tag";
+
+  typeTag.textContent =
+    "Paper Plugin";
+
+  meta.appendChild(
+    typeTag
+  );
+
+  const versionTag =
+    document.createElement("span");
+
+  versionTag.className =
+    "modrinth-tag";
+
+  versionTag.textContent =
+    `Minecraft ${minecraftVersion}`;
+
+  meta.appendChild(
+    versionTag
+  );
+
+  const downloadsTag =
+    document.createElement("span");
+
+  downloadsTag.className =
+    "modrinth-tag";
+
+  downloadsTag.textContent =
+    `${formatDownloads(
+      project.downloads
+    )} downloads`;
+
+  meta.appendChild(
+    downloadsTag
+  );
+
+  info.append(
+    title,
+    description,
+    meta
+  );
+
+  const actions =
+    document.createElement("div");
+
+  actions.className =
+    "modrinth-actions";
+
+  const download =
+    document.createElement("button");
+
+  download.className =
+    "modrinth-download";
+
+  download.textContent =
+    "Loading...";
+
+  /*
+   * IMPORTANT:
+   *
+   * This downloads the JAR to the user's computer
+   * if the browser permits it.
+   *
+   * It does NOT install the plugin onto the Minecraft
+   * server yet.
+   *
+   * Installing directly into the server requires the
+   * hosting agent to receive a job and download the
+   * JAR itself.
+   */
+
+  download.addEventListener(
+    "click",
+    async () => {
+
+      try {
+
+        download.disabled =
+          true;
+
+        download.textContent =
+          "Installing...";
+
+        await installModrinthPlugin(
+          project.project_id,
+          minecraftVersion,
+          project.title ||
+            project.slug ||
+            "Plugin"
+        );
+
+        download.textContent =
+          "Install queued";
+
+      } catch (error) {
+
+        console.error(
+          "Plugin installation:",
+          error
+        );
+
+        download.disabled =
+          false;
+
+        download.textContent =
+          "Install failed";
+
+        showMessage(
+          $("modrinthMsg"),
+          error.message ||
+            "Failed to install plugin.",
+          "error"
+        );
+
+      }
+
+    }
+  );
+
+  actions.appendChild(
+    download
+  );
+
+  const modrinth =
+    document.createElement("a");
+
+  modrinth.className =
+    "modrinth-project";
+
+  modrinth.textContent =
+    "View on Modrinth";
+
+  modrinth.href =
+    projectLink.href;
+
+  modrinth.target =
+    "_blank";
+
+  modrinth.rel =
+    "noopener noreferrer";
+
+  actions.appendChild(
+    modrinth
+  );
+
+  card.append(
+    icon,
+    info,
+    actions
+  );
+
+  /*
+   * Check that a compatible JAR actually exists.
+   */
+
+  try {
+
+    const versionUrl =
+      new URL(
+        `${MODRINTH_API}/project/${
+          encodeURIComponent(
+            project.project_id
+          )
+        }/version`
+      );
+
+    versionUrl.searchParams.set(
+      "loaders",
+      JSON.stringify([
+        "paper",
+        "spigot",
+        "bukkit"
+      ])
+    );
+
+    versionUrl.searchParams.set(
+      "game_versions",
+      JSON.stringify([
+        minecraftVersion
+      ])
+    );
+
+    versionUrl.searchParams.set(
+      "include_changelog",
+      "false"
+    );
+
+    const response =
+      await fetch(versionUrl);
+
+    if (!response.ok) {
+      throw new Error(
+        `Version lookup failed: ${response.status}`
+      );
+    }
+
+    const versions =
+      await response.json();
+
+    const compatible =
+      versions.find(
+        version =>
+          version.version_type ===
+          "release" &&
+          version.status ===
+          "listed"
+      ) ||
+      versions.find(
+        version =>
+          version.status ===
+          "listed"
+      );
+
+    if (!compatible) {
+
+      download.textContent =
+        "No compatible release";
+
+      download.disabled =
+        true;
+
+      return card;
+    }
+
+    const primaryFile =
+      compatible.files?.find(
+        file =>
+          file.primary === true
+      ) ||
+      compatible.files?.find(
+        file =>
+          file.filename
+            ?.toLowerCase()
+            .endsWith(".jar")
+      );
+
+    if (!primaryFile) {
+
+      download.textContent =
+        "No JAR available";
+
+      download.disabled =
+        true;
+
+      return card;
+    }
+
+    download.textContent =
+      "Install to server";
+
+  } catch (error) {
+
+    console.error(
+      "Modrinth compatibility check:",
+      error
+    );
+
+    download.textContent =
+      "Unavailable";
+
+    download.disabled =
+      true;
+  }
+
+  return card;
+}
+
+
+/* ============================================================
+   INSTALL MODRINTH PLUGIN
+   ============================================================ */
+
+async function installModrinthPlugin(
+  projectId,
+  minecraftVersion,
+  pluginName
+) {
+
+  const user =
+    auth.currentUser;
+
+  if (!user) {
+    throw new Error(
+      "You must be signed in."
+    );
+  }
+
+  if (!currentServerId) {
+    throw new Error(
+      "Select a server first."
+    );
+  }
+
+  /*
+   * The agent should handle the actual download.
+   *
+   * The browser only creates a Firestore job.
+   */
+
+  await addDoc(
+    collection(db, "jobs"),
+    {
+      owner:
+        user.uid,
+
+      serverId:
+        currentServerId,
+
+      type:
+        "install-plugin",
+
+      projectId,
+
+      minecraftVersion,
+
+      pluginName,
+
+      status:
+        "queued",
+
+      createdAt:
+        Date.now()
+    }
+  );
+
+  showMessage(
+    $("modrinthMsg"),
+    `${pluginName} installation queued.`,
+    "success"
+  );
+}
