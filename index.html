@@ -6,7 +6,7 @@
   <title>LocalNode</title>
   <link rel="stylesheet" href="./style.css">
 </head>
- 
+
 <body>
 <main class="wrap">
 
@@ -20,6 +20,7 @@
       Log out
     </button>
   </header>
+
 
   <!-- AUTH -->
 
@@ -64,48 +65,7 @@
 
 
   <!-- APP -->
-<section id="modrinthPanel" class="card modrinth-panel">
 
-  <div class="row between modrinth-header">
-    <div>
-      <h2>Fabric Mods</h2>
-      <div class="muted">
-        Search and download Fabric mods from Modrinth.
-      </div>
-    </div>
-
-    <span class="pill">Fabric</span>
-  </div>
-
-  <form id="modrinthSearchForm" class="modrinth-search">
-
-    <input
-      id="modrinthSearch"
-      type="search"
-      placeholder="Search Fabric mods..."
-      autocomplete="off"
-    >
-
-    <select id="modrinthVersion">
-      <option value="1.21.11">1.21.11</option>
-      <option value="1.21.10">1.21.10</option>
-    </select>
-
-    <button type="submit">
-      Search
-    </button>
-
-  </form>
-
-  <div id="modrinthMsg" class="msg"></div>
-
-  <div id="modrinthResults" class="modrinth-results">
-    <div class="muted">
-      Search for a Fabric mod to get started.
-    </div>
-  </div>
-
-</section>
   <section id="app" class="hidden">
 
     <div class="row between">
@@ -122,17 +82,22 @@
     </div>
 
 
+    <!-- SERVER LIST -->
+
     <div id="servers" class="grid"></div>
 
 
-    <!-- SERVER -->
+    <!-- SERVER PANEL -->
 
     <section id="serverPanel" class="card hidden">
 
       <div class="row between">
 
         <div>
-          <h2 id="serverName">Server</h2>
+
+          <h2 id="serverName">
+            Server
+          </h2>
 
           <div
             id="serverAddress"
@@ -140,6 +105,7 @@
           >
             Not online
           </div>
+
         </div>
 
         <span
@@ -151,6 +117,8 @@
 
       </div>
 
+
+      <!-- SERVER ACTIONS -->
 
       <div class="actions">
 
@@ -176,16 +144,17 @@
 
       <h3>Console</h3>
 
-      <pre id="console" class="console">
-Waiting for the hosting agent…
-      </pre>
+      <pre id="console" class="console">Waiting for the hosting agent…</pre>
 
 
       <!-- COMMAND LINE -->
 
       <h3>Command line</h3>
 
-      <form id="commandForm" class="commandbar">
+      <form
+        id="commandForm"
+        class="commandbar"
+      >
 
         <input
           id="commandInput"
@@ -201,7 +170,60 @@ Waiting for the hosting agent…
 
       </form>
 
-      <div id="commandMsg" class="msg"></div>
+      <div
+        id="commandMsg"
+        class="msg"
+      ></div>
+
+
+      <!-- PAPER PLUGINS -->
+
+      <section class="plugins-section">
+
+        <div class="section-heading">
+
+          <div>
+            <h3>Paper Plugins</h3>
+
+            <div class="muted">
+              Search and install Paper plugins from Modrinth.
+            </div>
+          </div>
+
+        </div>
+
+
+        <div class="modrinth-search">
+
+          <input
+            id="pluginSearch"
+            type="search"
+            placeholder="Search Paper plugins on Modrinth..."
+            autocomplete="off"
+          >
+
+          <button
+            id="pluginSearchButton"
+            type="button"
+          >
+            Search
+          </button>
+
+        </div>
+
+
+        <div
+          id="pluginMsg"
+          class="msg"
+        ></div>
+
+
+        <div
+          id="pluginResults"
+          class="plugin-grid"
+        ></div>
+
+      </section>
 
 
       <!-- FILES -->
@@ -225,7 +247,10 @@ Waiting for the hosting agent…
 
       </div>
 
-      <div id="files" class="files"></div>
+      <div
+        id="files"
+        class="files"
+      ></div>
 
     </section>
 
@@ -246,12 +271,14 @@ Waiting for the hosting agent…
 
     <h2>Create Minecraft server</h2>
 
+
     <input
       id="serverNameInput"
       placeholder="Server name"
       maxlength="32"
       required
     >
+
 
     <select id="versionInput">
 
@@ -280,11 +307,13 @@ Waiting for the hosting agent…
         3 GB RAM
       </option>
 
-
     </select>
 
 
-    <div id="ramNotice" class="msg"></div>
+    <div
+      id="ramNotice"
+      class="msg"
+    ></div>
 
 
     <div class="row end">
@@ -296,7 +325,10 @@ Waiting for the hosting agent…
         Cancel
       </button>
 
-      <button id="createServerButton">
+      <button
+        id="createServerButton"
+        value="create"
+      >
         Create
       </button>
 
@@ -306,7 +338,11 @@ Waiting for the hosting agent…
 
 </dialog>
 
-<script type="module" src="./app.js"></script>
+
+<script
+  type="module"
+  src="./app.js"
+></script>
 
 </body>
 </html>
