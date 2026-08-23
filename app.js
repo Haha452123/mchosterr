@@ -56,7 +56,7 @@ const db =
 const HOSTNAME =
   "freemchosting.vexr.dev";
 
-const MAX_SERVERS = 3;
+const MAX_SERVERS = 1;
 const FREE_RAM_LIMIT = 3072;
 
 
