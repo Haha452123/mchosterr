@@ -1,77 +1,92 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Beacon — Minecraft Server Panel</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>LocalNode Server Hosting</title>
+  <link rel="stylesheet" href="./style.css">
 </head>
 <body>
- 
-<!-- Auth screen -->
-<div id="auth-screen" class="auth-shell hidden">
-  <div class="auth-card">
-    <div class="brand"><div class="beacon off"></div><div class="brand-name">Beacon</div></div>
-    <div id="auth-form-login">
-      <h1>Log in</h1>
-      <p class="auth-sub">Manage your Minecraft servers and playit.gg tunnels.</p>
-      <div id="auth-error" class="error-msg hidden"></div>
-      <form id="login-form">
-        <div class="field"><label>Username</label><input type="text" name="username" autocomplete="username" required></div>
-        <div class="field"><label>Password</label><input type="password" name="password" autocomplete="current-password" required></div>
-        <button type="submit" class="btn btn-primary btn-block">Log in</button>
-      </form>
-      <div class="auth-toggle">No account yet? <button id="show-register">Create one</button></div>
-    </div>
-    <div id="auth-form-register" class="hidden">
-      <h1>Create your account</h1>
-      <p class="auth-sub">This creates a top-level (owner) account.</p>
-      <div id="auth-error-2" class="error-msg hidden"></div>
-      <form id="register-form">
-        <div class="field"><label>Username</label><input type="text" name="username" minlength="3" required></div>
-        <div class="field"><label>Password</label><input type="password" name="password" minlength="8" required></div>
-        <button type="submit" class="btn btn-primary btn-block">Create account</button>
-      </form>
-      <div class="auth-toggle">Already have an account? <button id="show-login">Log in</button></div>
-    </div>
-  </div>
-</div>
-
-<!-- Main app -->
-<div id="app-shell" class="app-shell hidden">
-  <div class="sidebar">
-    <div class="brand"><div class="beacon off"></div><div class="brand-name">Beacon</div></div>
-    <button class="nav-item active" data-view="servers">🗺️ My Servers</button>
-    <button class="nav-item" data-view="subusers" id="nav-subusers">👥 Sub-Users</button>
-    <div class="sidebar-footer">
-      <div class="user-chip"><strong id="me-username">—</strong><span class="role-tag" id="me-role">—</span></div>
-      <button class="btn btn-block btn-sm" id="logout-btn">Log out</button>
-    </div>
-  </div>
-  <div class="main">
-    <div id="view-servers">
-      <div class="page-head">
-        <div><h1>My Servers</h1><p>Request a start — your host agent picks it up and gets it running.</p></div>
-        <button class="btn btn-primary" id="new-server-btn">+ New server</button>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <div class="brand">LocalNode</div>
+        <div class="muted">Minecraft Server Hosting</div>
       </div>
-      <div id="agent-warning" class="error-msg hidden">No host agent has checked in recently — start/stop requests will queue until one is running. See the agent/ folder in your project.</div>
-      <div id="server-grid" class="server-grid"></div>
-    </div>
+      <button id="logout" class="secondary hidden">Log out</button>
+    </header>
 
-    <div id="view-server-detail" class="hidden"></div>
+    <section id="auth" class="card auth">
+      <h1 id="authTitle">Sign in</h1>
+      <p class="muted">Manage your Minecraft servers from your browser.</p>
+      <form id="authForm">
+        <input id="email" type="email" placeholder="Email" required>
+        <input id="password" type="password" placeholder="Password" minlength="6" required>
+        <button id="authSubmit" type="submit">Sign in</button>
+      </form>
+      <button id="toggleAuth" class="linkbtn">Need an account? Register</button>
+      <div id="authMsg" class="msg"></div>
+    </section>
 
-    <div id="view-subusers" class="hidden">
-      <div class="page-head">
-        <div><h1>Sub-Users</h1><p>Give someone limited access to specific servers without sharing your login.</p></div>
-        <button class="btn btn-primary" id="new-subuser-btn">+ Add sub-user</button>
+    <section id="app" class="hidden">
+      <div class="row between">
+        <div>
+          <h1>Dashboard</h1>
+          <div id="who" class="muted"></div>
+        </div>
+        <button id="newServer">+ Create server</button>
       </div>
-      <div id="subuser-list"></div>
-    </div>
-  </div>
-</div>
 
-<div id="modal-root"></div>
+      <div id="servers" class="grid"></div>
 
-<script type="module" src="app.js"></script>
+      <section id="serverPanel" class="card hidden">
+        <div class="row between">
+          <div>
+            <h2 id="serverName">Server</h2>
+            <div id="serverAddress" class="muted"></div>
+          </div>
+          <span id="serverStatus" class="pill">offline</span>
+        </div>
+
+        <div class="actions">
+          <button data-action="start">Start</button>
+          <button data-action="restart">Restart</button>
+          <button data-action="stop" class="danger">Stop</button>
+        </div>
+
+        <h3>Console</h3>
+        <pre id="console">Waiting for the hosting agent…</pre>
+
+        <h3>Files</h3>
+        <div class="filebar">
+          <input id="filePath" placeholder="plugins/example.jar or server.properties">
+          <button id="refreshFiles" class="secondary">Refresh</button>
+        </div>
+        <div id="files" class="files"></div>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="createDialog">
+    <form method="dialog" id="createForm" class="dialog">
+      <h2>Create Minecraft server</h2>
+      <input id="serverNameInput" placeholder="Server name" maxlength="32" required>
+      <select id="versionInput">
+        <option value="1.21.11">1.21.11</option>
+        <option value="1.21.10">1.21.10</option>
+      </select>
+      <select id="ramInput">
+        <option value="1024">1 GB RAM</option>
+        <option value="2048">2 GB RAM</option>
+        <option value="4096">4 GB RAM</option>
+      </select>
+      <div class="row end">
+        <button value="cancel" class="secondary">Cancel</button>
+        <button value="default">Create</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
