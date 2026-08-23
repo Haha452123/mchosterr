@@ -1,1 +1,156 @@
-*{box-sizing:border-box}body{margin:0;background:#0b1020;color:#edf2ff;font:15px system-ui,-apple-system,Segoe UI,sans-serif}.wrap{max-width:1100px;margin:auto;padding:28px}.top,.row{display:flex;align-items:center;gap:16px}.between{justify-content:space-between}.end{justify-content:flex-end}.brand{font-size:26px;font-weight:800}.muted{color:#9aa7c2}.card{background:#121a2d;border:1px solid #26334f;border-radius:16px;padding:22px;box-shadow:0 12px 35px #0003}.auth{max-width:430px;margin:70px auto}.auth h1,h1,h2,h3{margin-top:0}form{display:grid;gap:12px}input,select,button{border-radius:10px;border:1px solid #34425f;padding:11px 13px;font:inherit}input,select{background:#0d1425;color:#fff;width:100%}button{background:#6ea8fe;color:#08111f;font-weight:700;cursor:pointer}.secondary{background:#1b2740;color:#dbe7ff}.danger{background:#d95c6a;color:#fff}.linkbtn{background:none;border:0;color:#83b7ff;padding:8px 0}.msg{margin-top:12px;min-height:20px;color:#ffb6bd}.hidden{display:none!important}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px;margin:22px 0}.server{cursor:pointer}.server h3{margin-bottom:5px}.pill{padding:5px 10px;border-radius:999px;background:#26334f;text-transform:capitalize}.actions{display:flex;gap:10px;margin:18px 0}.actions button{min-width:90px}pre{background:#070b14;border:1px solid #222d45;border-radius:10px;padding:14px;min-height:220px;max-height:400px;overflow:auto;white-space:pre-wrap}.filebar{display:flex;gap:10px}.files{margin-top:12px}.file{padding:10px;border-bottom:1px solid #26334f}.dialog{background:#121a2d;color:#fff;border:1px solid #34425f;border-radius:16px;padding:22px;width:min(420px,90vw)}dialog::backdrop{background:#0008}@media(max-width:600px){.wrap{padding:16px}.actions,.filebar{flex-wrap:wrap}.filebar input{min-width:100%}}
+*{box-sizing:border-box}body{margin:0;background:#0b1020;color:#edf2ff;font:15px system-ui,-apple-system,Segoe UI,sans-serif}.wrap{max-width:1100px;margin:auto;padding:28px}.top,.row{display:flex;align-items:center;gap:16px}.between{justify-content:space-between}.end{justify-content:flex-end}.brand{font-size:26px;font-weight:800}.muted{color:#9aa7c2}.card{background:#121a2d;border:1px solid #26334f;border-radius:16px;padding:22px;box-shadow:0 12px 35px #0003}.auth{max-width:430px;margin:70px auto}.auth h1,h1,h2,h3{margin-top:0}form{display:grid;gap:12px}input,select,button{border-radius:10px;border:1px solid #34425f;padding:11px 13px;font:inherit}input,select{background:#0d1425;color:#fff;width:100%}button{background:#6ea8fe;color:#08111f;font-weight:700;cursor:pointer}.secondary{background:#1b2740;color:#dbe7ff}.danger{background:#d95c6a;color:#fff}.linkbtn{background:none;border:0;color:#83b7ff;padding:8px 0}.msg{margin-top:12px;min-height:20px;color:#ffb6bd}.hidden{display:none!important}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px;margin:22px 0}.server{cursor:pointer}.server h3{margin-bottom:5px}.pill{padding:5px 10px;border-radius:999px;background:#26334f;text-transform:capitalize}.actions{display:flex;gap:10px;margin:18px 0}.actions button{min-width:90px}pre{background:#070b14;border:1px solid #222d45;border-radius:10px;padding:14px;min-height:220px;max-height:400px;overflow:auto;white-space:pre-wrap}.filebar{display:flex;gap:10px}.files{margin-top:12px}.file{padding:10px;border-bottom:1px solid #26334f}.dialog{background:#121a2d;color:#fff;border:1px solid #34425f;border-radius:16px;padding:22px;width:min(420px,90vw)}dialog::backdrop{background:#0008}@media(max-width:600px){.wrap{padding:16px}.actions,.filebar{flex-wrap:wrap}.filebar input{min-width:100%}}```css
+/* ============================================================
+   MODRINTH FABRIC MODS
+   ============================================================ */
+
+.modrinth-panel {
+  margin-top: 22px;
+}
+
+.modrinth-header {
+  margin-bottom: 18px;
+}
+
+.modrinth-search {
+  display: grid;
+  grid-template-columns: 1fr 170px auto;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.modrinth-search input,
+.modrinth-search select {
+  min-width: 0;
+}
+
+.modrinth-results {
+  display: grid;
+  gap: 12px;
+}
+
+.modrinth-card {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+  padding: 15px;
+  background: #0d1425;
+  border: 1px solid #26334f;
+  border-radius: 12px;
+}
+
+.modrinth-icon {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #121a2d;
+}
+
+.modrinth-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.modrinth-title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.modrinth-title a {
+  color: #edf2ff;
+  text-decoration: none;
+}
+
+.modrinth-title a:hover {
+  color: #83b7ff;
+}
+
+.modrinth-description {
+  color: #9aa7c2;
+  line-height: 1.45;
+  margin-bottom: 8px;
+}
+
+.modrinth-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.modrinth-tag {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #1b2740;
+  color: #cbd8f2;
+  font-size: 12px;
+}
+
+.modrinth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 125px;
+}
+
+.modrinth-actions a {
+  text-align: center;
+  text-decoration: none;
+}
+
+.modrinth-download {
+  background: #6ea8fe;
+  color: #08111f;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.modrinth-project {
+  background: #1b2740;
+  color: #dbe7ff;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.modrinth-loading {
+  padding: 25px;
+  text-align: center;
+  color: #9aa7c2;
+}
+
+.modrinth-empty {
+  padding: 25px;
+  text-align: center;
+  border: 1px dashed #34425f;
+  border-radius: 12px;
+  color: #9aa7c2;
+}
+
+@media (max-width: 700px) {
+
+  .modrinth-search {
+    grid-template-columns: 1fr;
+  }
+
+  .modrinth-card {
+    flex-direction: column;
+  }
+
+  .modrinth-icon {
+    width: 56px;
+    height: 56px;
+    flex-basis: 56px;
+  }
+
+  .modrinth-actions {
+    width: 100%;
+    flex-direction: row;
+  }
+
+  .modrinth-actions a {
+    flex: 1;
+  }
+
+}
