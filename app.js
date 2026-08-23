@@ -29,22 +29,24 @@ import {
    FIREBASE
    ============================================================ */
 
- const firebaseConfig = {
-  "apiKey": "AIzaSyAcQu7U91BAoVuVdCzFrVfqvzGK7iyJnjA",
-  "authDomain": "p9w-26379.firebaseapp.com",
-  "databaseURL": "https://p9w-26379-default-rtdb.firebaseio.com",
-  "projectId": "p9w-26379",
-  "storageBucket": "p9w-26379.firebasestorage.app",
-  "messagingSenderId": "509609712694",
-  "appId": "1:509609712694:web:51d3e090f48a6a6c4e8c97",
-  "measurementId": "G-B0ZX1K094H"
+const firebaseConfig = {
+  apiKey: "AIzaSyAew9fVw91DarhE9mUUIy2VZ2sCVxrAX44",
+  authDomain: "mchost-9516b.firebaseapp.com",
+  projectId: "mchost-9516b",
+  storageBucket: "mchost-9516b.firebasestorage.app",
+  messagingSenderId: "692774609042",
+  appId: "1:692774609042:web:dd447dc87803450d22864b",
+  measurementId: "G-ED4W6V8CNT"
 };
 
-const firebaseApp = initializeApp(firebaseConfig);
+const firebaseApp =
+  initializeApp(firebaseConfig);
 
-const auth = getAuth(firebaseApp);
+const auth =
+  getAuth(firebaseApp);
 
-const db = getFirestore(firebaseApp);
+const db =
+  getFirestore(firebaseApp);
 
 
 /* ============================================================
@@ -55,11 +57,7 @@ const HOSTNAME =
   "freemchosting.vexr.dev";
 
 const MAX_SERVERS = 1;
-
 const FREE_RAM_LIMIT = 3072;
-
-const MODRINTH_API =
-  "https://api.modrinth.com/v2";
 
 
 /* ============================================================
@@ -69,16 +67,14 @@ const MODRINTH_API =
 let currentServerId = null;
 
 let serverUnsubscribe = null;
-
 let serversUnsubscribe = null;
-
 let jobsUnsubscribe = null;
 
 let registerMode = false;
 
 
 /* ============================================================
-   HELPER
+   HELPERS
    ============================================================ */
 
 function $(id) {
@@ -115,7 +111,7 @@ function escapeHtml(value) {
 
 
 /* ============================================================
-   STATUS
+   STATUS DISPLAY
    ============================================================ */
 
 function prettyStatus(status) {
@@ -168,7 +164,7 @@ function isPendingStatus(status) {
 
 
 /* ============================================================
-   AUTH MODE
+   AUTH SWITCH
    ============================================================ */
 
 $("toggleAuth")?.addEventListener(
@@ -213,10 +209,14 @@ $("authForm")?.addEventListener(
     event.preventDefault();
 
     const email =
-      $("email").value.trim();
+      $("email")
+        .value
+        .trim();
 
     const password =
-      $("password").value;
+      $("password")
+        .value;
+
 
     try {
 
@@ -224,6 +224,7 @@ $("authForm")?.addEventListener(
         $("authMsg"),
         "Please wait…"
       );
+
 
       if (registerMode) {
 
@@ -242,6 +243,7 @@ $("authForm")?.addEventListener(
         );
 
       }
+
 
     } catch (error) {
 
@@ -299,34 +301,25 @@ onAuthStateChanged(
         ?.classList
         .add("hidden");
 
+
       if (serversUnsubscribe) {
-
         serversUnsubscribe();
-
         serversUnsubscribe = null;
-
       }
 
       if (serverUnsubscribe) {
-
         serverUnsubscribe();
-
         serverUnsubscribe = null;
-
       }
 
       if (jobsUnsubscribe) {
-
         jobsUnsubscribe();
-
         jobsUnsubscribe = null;
-
       }
 
       currentServerId = null;
 
       return;
-
     }
 
 
@@ -413,7 +406,7 @@ async function ensureUserProfile(user) {
 
 
 /* ============================================================
-   SERVERS
+   WATCH SERVERS
    ============================================================ */
 
 function watchServers(uid) {
@@ -456,6 +449,11 @@ function watchServers(uid) {
         );
 
 
+        /*
+         * If the currently selected server
+         * disappeared, close its panel.
+         */
+
         if (
           currentServerId &&
           !servers.some(
@@ -474,6 +472,11 @@ function watchServers(uid) {
 
         }
 
+
+        /*
+         * Keep currently selected server
+         * updated immediately.
+         */
 
         const selected =
           servers.find(
@@ -511,10 +514,12 @@ function watchServers(uid) {
 
 
 /* ============================================================
-   SERVER CARDS
+   RENDER SERVER CARDS
    ============================================================ */
 
-function renderServers(servers) {
+function renderServers(
+  servers
+) {
 
   const box =
     $("servers");
@@ -546,16 +551,20 @@ function renderServers(servers) {
       server.status ||
       "offline";
 
-
     const card =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
+
 
     card.className =
       "card server";
 
 
     const title =
-      document.createElement("h3");
+      document.createElement(
+        "h3"
+      );
 
     title.textContent =
       server.name ||
@@ -563,7 +572,9 @@ function renderServers(servers) {
 
 
     const statusElement =
-      document.createElement("span");
+      document.createElement(
+        "span"
+      );
 
     statusElement.className =
       "pill";
@@ -573,7 +584,9 @@ function renderServers(servers) {
 
 
     const header =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
 
     header.className =
       "row between";
@@ -585,7 +598,9 @@ function renderServers(servers) {
 
 
     const address =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
 
     address.className =
       "muted";
@@ -600,7 +615,9 @@ function renderServers(servers) {
 
 
     const info =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
 
     info.className =
       "muted";
@@ -712,10 +729,12 @@ async function openServer(
 
 
 /* ============================================================
-   SERVER PANEL
+   UPDATE SERVER PANEL
    ============================================================ */
 
-function updateServerPanel(server) {
+function updateServerPanel(
+  server
+) {
 
   const status =
     server.status ||
@@ -727,7 +746,16 @@ function updateServerPanel(server) {
     server.id;
 
 
-  if (server.address) {
+  /*
+   * Pending/provisioning fix:
+   *
+   * Don't show "Not online" while the
+   * agent is still working.
+   */
+
+  if (
+    server.address
+  ) {
 
     $("serverAddress").textContent =
       server.address;
@@ -765,6 +793,15 @@ function updateServerPanel(server) {
 /* ============================================================
    JOB LISTENER
    ============================================================ */
+
+/*
+ * This is the client-side pending fix.
+ *
+ * We watch the user's jobs and use them to make
+ * the UI understand that an operation is still
+ * happening even before the server document
+ * changes.
+ */
 
 function watchUserJobs(uid) {
 
@@ -805,10 +842,6 @@ function watchUserJobs(uid) {
           jobs
         );
 
-        updatePluginInstallUI(
-          jobs
-        );
-
       },
 
       error => {
@@ -828,14 +861,19 @@ function watchUserJobs(uid) {
    PENDING UI
    ============================================================ */
 
-function updatePendingUI(jobs) {
+function updatePendingUI(
+  jobs
+) {
 
   if (!currentServerId) {
-
     return;
-
   }
 
+
+  /*
+   * Find the newest active job
+   * for the selected server.
+   */
 
   const activeJobs =
     jobs
@@ -962,6 +1000,10 @@ $("newServer")?.addEventListener(
 );
 
 
+/* ============================================================
+   RAM SELECTION
+   ============================================================ */
+
 $("ramInput")?.addEventListener(
   "change",
   () => {
@@ -1021,15 +1063,14 @@ $("createForm")?.addEventListener(
         .value
         .trim();
 
-
     const version =
       $("versionInput")
         .value;
 
-
     const ram =
       Number(
-        $("ramInput").value
+        $("ramInput")
+          .value
       );
 
 
@@ -1041,6 +1082,10 @@ $("createForm")?.addEventListener(
 
 
     try {
+
+      /*
+       * Check profile limits before creating.
+       */
 
       const profileSnap =
         await getDoc(
@@ -1086,10 +1131,14 @@ $("createForm")?.addEventListener(
       const activeServers =
         servers.filter(
           server =>
-            server.status === "online" ||
-            server.status === "starting" ||
-            server.status === "provisioning" ||
-            server.status === "restarting"
+            server.status ===
+              "online" ||
+            server.status ===
+              "starting" ||
+            server.status ===
+              "provisioning" ||
+            server.status ===
+              "restarting"
         );
 
 
@@ -1122,6 +1171,10 @@ $("createForm")?.addEventListener(
           0
         );
 
+
+      /*
+       * 4 GB test purchase.
+       */
 
       if (ram === 4096) {
 
@@ -1157,8 +1210,7 @@ $("createForm")?.addEventListener(
 
             amount: 3,
 
-            status:
-              "test",
+            status: "test",
 
             createdAt:
               Date.now()
@@ -1192,6 +1244,10 @@ $("createForm")?.addEventListener(
 
       }
 
+
+      /*
+       * Create server.
+       */
 
       const serverRef =
         doc(
@@ -1231,6 +1287,10 @@ $("createForm")?.addEventListener(
       );
 
 
+      /*
+       * Create provision job.
+       */
+
       await addDoc(
         collection(db, "jobs"),
         {
@@ -1261,6 +1321,11 @@ $("createForm")?.addEventListener(
       $("serverNameInput")
         .value = "";
 
+
+      /*
+       * Immediately open the server so
+       * the user sees "Provisioning…".
+       */
 
       openServer(
         serverRef.id,
@@ -1309,7 +1374,9 @@ $("createForm")?.addEventListener(
    ============================================================ */
 
 document
-  .querySelectorAll("[data-action]")
+  .querySelectorAll(
+    "[data-action]"
+  )
   .forEach(
     button => {
 
@@ -1337,6 +1404,12 @@ document
 
           try {
 
+            /*
+             * Update the UI immediately.
+             * This prevents the "nothing happened"
+             * feeling while the agent receives the job.
+             */
+
             const temporaryStatus = {
 
               start:
@@ -1351,7 +1424,9 @@ document
             }[type];
 
 
-            if (temporaryStatus) {
+            if (
+              temporaryStatus
+            ) {
 
               $("serverStatus")
                 .textContent =
@@ -1391,6 +1466,7 @@ document
               error
             );
 
+
             showFirebaseError(
               error
             );
@@ -1405,7 +1481,7 @@ document
 
 
 /* ============================================================
-   COMMAND
+   COMMAND LINE
    ============================================================ */
 
 $("commandForm")?.addEventListener(
@@ -1447,6 +1523,11 @@ $("commandForm")?.addEventListener(
 
     }
 
+
+    /*
+     * Minecraft console commands don't
+     * need the leading slash.
+     */
 
     if (
       command.startsWith("/")
@@ -1572,13 +1653,6 @@ async function refreshFiles() {
       $("files");
 
 
-    if (!files) {
-
-      return;
-
-    }
-
-
     files.innerHTML = "";
 
 
@@ -1638,1107 +1712,6 @@ async function refreshFiles() {
 
 
 /* ============================================================
-   MODRINTH PAPER PLUGIN SEARCH
-   ============================================================ */
-
-$("modrinthSearchForm")?.addEventListener(
-  "submit",
-  async event => {
-
-    event.preventDefault();
-
-
-    const input =
-      $("modrinthSearch");
-
-    const versionInput =
-      $("modrinthVersion");
-
-    const results =
-      $("modrinthResults");
-
-    const message =
-      $("modrinthMsg");
-
-
-    if (
-      !input ||
-      !results
-    ) {
-
-      return;
-
-    }
-
-
-    const search =
-      input.value.trim();
-
-
-    const minecraftVersion =
-      versionInput?.value ||
-      "1.21.11";
-
-
-    if (!search) {
-
-      showMessage(
-        message,
-        "Enter a plugin to search for.",
-        "error"
-      );
-
-      return;
-
-    }
-
-
-    results.innerHTML = `
-      <div class="modrinth-loading">
-        Searching Modrinth plugins…
-      </div>
-    `;
-
-
-    showMessage(
-      message,
-      ""
-    );
-
-
-    try {
-
-      /*
-       * IMPORTANT:
-       *
-       * These are Paper plugins, NOT Fabric mods.
-       *
-       * project_type:plugin
-       * categories:paper
-       */
-
-      const facets =
-        JSON.stringify([
-          ["project_type:plugin"],
-          ["categories:paper"],
-          [`versions:${minecraftVersion}`]
-        ]);
-
-
-      const url =
-        new URL(
-          `${MODRINTH_API}/search`
-        );
-
-
-      url.searchParams.set(
-        "query",
-        search
-      );
-
-
-      url.searchParams.set(
-        "facets",
-        facets
-      );
-
-
-      url.searchParams.set(
-        "limit",
-        "20"
-      );
-
-
-      url.searchParams.set(
-        "index",
-        "relevance"
-      );
-
-
-      const response =
-        await fetch(url);
-
-
-      if (!response.ok) {
-
-        throw new Error(
-          `Modrinth returned HTTP ${response.status}.`
-        );
-
-      }
-
-
-      const data =
-        await response.json();
-
-
-      const projects =
-        data.hits || [];
-
-
-      if (!projects.length) {
-
-        results.innerHTML = `
-          <div class="modrinth-empty">
-            No Paper plugins found for
-            Minecraft ${escapeHtml(
-              minecraftVersion
-            )}.
-          </div>
-        `;
-
-        return;
-
-      }
-
-
-      results.innerHTML = "";
-
-
-      for (
-        const project of projects
-      ) {
-
-        const card =
-          await createModrinthPluginCard(
-            project,
-            minecraftVersion
-          );
-
-
-        results.appendChild(
-          card
-        );
-
-      }
-
-
-    } catch (error) {
-
-      console.error(
-        "Modrinth search error:",
-        error
-      );
-
-
-      results.innerHTML = `
-        <div class="modrinth-empty">
-          Failed to search Modrinth.
-          Try again in a moment.
-        </div>
-      `;
-
-    }
-
-  }
-);
-
-
-/* ============================================================
-   MODRINTH PLUGIN CARD
-   ============================================================ */
-
-async function createModrinthPluginCard(
-  project,
-  minecraftVersion
-) {
-
-  const card =
-    document.createElement(
-      "article"
-    );
-
-
-  card.className =
-    "modrinth-card";
-
-
-  const icon =
-    document.createElement(
-      "img"
-    );
-
-
-  icon.className =
-    "modrinth-icon";
-
-
-  icon.alt =
-    `${project.title || "Plugin"} icon`;
-
-
-  icon.loading =
-    "lazy";
-
-
-  if (project.icon_url) {
-
-    icon.src =
-      project.icon_url;
-
-  }
-
-
-  const info =
-    document.createElement(
-      "div"
-    );
-
-
-  info.className =
-    "modrinth-info";
-
-
-  const title =
-    document.createElement(
-      "h3"
-    );
-
-
-  title.className =
-    "modrinth-title";
-
-
-  const projectLink =
-    document.createElement(
-      "a"
-    );
-
-
-  projectLink.href =
-    `https://modrinth.com/plugin/${encodeURIComponent(
-      project.slug ||
-      project.project_id
-    )}`;
-
-
-  projectLink.target =
-    "_blank";
-
-
-  projectLink.rel =
-    "noopener noreferrer";
-
-
-  projectLink.textContent =
-    project.title ||
-    project.slug ||
-    "Unknown plugin";
-
-
-  title.appendChild(
-    projectLink
-  );
-
-
-  const description =
-    document.createElement(
-      "div"
-    );
-
-
-  description.className =
-    "modrinth-description";
-
-
-  description.textContent =
-    project.description ||
-    "No description available.";
-
-
-  const meta =
-    document.createElement(
-      "div"
-    );
-
-
-  meta.className =
-    "modrinth-meta";
-
-
-  const paperTag =
-    document.createElement(
-      "span"
-    );
-
-
-  paperTag.className =
-    "modrinth-tag";
-
-
-  paperTag.textContent =
-    "Paper";
-
-
-  meta.appendChild(
-    paperTag
-  );
-
-
-  const versionTag =
-    document.createElement(
-      "span"
-    );
-
-
-  versionTag.className =
-    "modrinth-tag";
-
-
-  versionTag.textContent =
-    `Minecraft ${minecraftVersion}`;
-
-
-  meta.appendChild(
-    versionTag
-  );
-
-
-  const downloadsTag =
-    document.createElement(
-      "span"
-    );
-
-
-  downloadsTag.className =
-    "modrinth-tag";
-
-
-  downloadsTag.textContent =
-    `${formatDownloads(
-      project.downloads
-    )} downloads`;
-
-
-  meta.appendChild(
-    downloadsTag
-  );
-
-
-  info.append(
-    title,
-    description,
-    meta
-  );
-
-
-  const actions =
-    document.createElement(
-      "div"
-    );
-
-
-  actions.className =
-    "modrinth-actions";
-
-
-  const install =
-    document.createElement(
-      "button"
-    );
-
-
-  install.className =
-    "modrinth-download";
-
-
-  install.type =
-    "button";
-
-
-  install.textContent =
-    "Loading…";
-
-
-  const modrinth =
-    document.createElement(
-      "a"
-    );
-
-
-  modrinth.className =
-    "modrinth-project";
-
-
-  modrinth.textContent =
-    "View on Modrinth";
-
-
-  modrinth.href =
-    projectLink.href;
-
-
-  modrinth.target =
-    "_blank";
-
-
-  modrinth.rel =
-    "noopener noreferrer";
-
-
-  actions.append(
-    install,
-    modrinth
-  );
-
-
-  card.append(
-    icon,
-    info,
-    actions
-  );
-
-
-  /*
-   * Find a Paper-compatible version.
-   */
-
-  try {
-
-    const versionUrl =
-      new URL(
-        `${MODRINTH_API}/project/` +
-        `${encodeURIComponent(
-          project.project_id
-        )}/version`
-      );
-
-
-    versionUrl.searchParams.set(
-      "loaders",
-      JSON.stringify([
-        "paper"
-      ])
-    );
-
-
-    versionUrl.searchParams.set(
-      "game_versions",
-      JSON.stringify([
-        minecraftVersion
-      ])
-    );
-
-
-    versionUrl.searchParams.set(
-      "include_changelog",
-      "false"
-    );
-
-
-    const response =
-      await fetch(
-        versionUrl
-      );
-
-
-    if (!response.ok) {
-
-      throw new Error(
-        `Version lookup failed: ${response.status}`
-      );
-
-    }
-
-
-    const versions =
-      await response.json();
-
-
-    const compatible =
-      versions.find(
-        version =>
-          version.version_type ===
-          "release" &&
-          version.status ===
-          "listed"
-      ) ||
-      versions.find(
-        version =>
-          version.status ===
-          "listed"
-      );
-
-
-    if (!compatible) {
-
-      install.textContent =
-        "Not compatible";
-
-      install.disabled =
-        true;
-
-      return card;
-
-    }
-
-
-    const primaryFile =
-      compatible.files?.find(
-        file =>
-          file.primary === true
-      ) ||
-      compatible.files?.find(
-        file =>
-          file.filename
-            ?.toLowerCase()
-            .endsWith(".jar")
-      );
-
-
-    if (!primaryFile) {
-
-      install.textContent =
-        "No .jar available";
-
-      install.disabled =
-        true;
-
-      return card;
-
-    }
-
-
-    install.textContent =
-      "Install to server";
-
-
-    install.disabled =
-      false;
-
-
-    /*
-     * This is the important part.
-     *
-     * The browser does NOT download the JAR.
-     *
-     * Instead it creates a Firestore job.
-     *
-     * The LocalNode Agent downloads the file
-     * directly into the Minecraft server's
-     * plugins directory.
-     */
-
-    install.addEventListener(
-      "click",
-      async () => {
-
-        await installModrinthPlugin({
-          projectId:
-            project.project_id,
-
-          projectSlug:
-            project.slug,
-
-          projectName:
-            project.title,
-
-          versionId:
-            compatible.id,
-
-          versionNumber:
-            compatible.version_number,
-
-          minecraftVersion,
-
-          filename:
-            primaryFile.filename,
-
-          downloadUrl:
-            primaryFile.url
-        });
-
-      }
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      "Modrinth plugin lookup:",
-      error
-    );
-
-
-    install.textContent =
-      "Unavailable";
-
-    install.disabled =
-      true;
-
-  }
-
-
-  return card;
-
-}
-
-
-/* ============================================================
-   INSTALL MODRINTH PLUGIN
-   ============================================================ */
-
-async function installModrinthPlugin(plugin) {
-
-  const user =
-    auth.currentUser;
-
-
-  if (
-    !user ||
-    !currentServerId
-  ) {
-
-    showMessage(
-      $("modrinthMsg"),
-      "Select a server first.",
-      "error"
-    );
-
-    return;
-
-  }
-
-
-  try {
-
-    /*
-     * Check that the server actually belongs
-     * to the logged-in user.
-     */
-
-    const serverSnap =
-      await getDoc(
-        doc(
-          db,
-          "servers",
-          currentServerId
-        )
-      );
-
-
-    if (!serverSnap.exists()) {
-
-      throw new Error(
-        "Server no longer exists."
-      );
-
-    }
-
-
-    const server =
-      serverSnap.data();
-
-
-    if (
-      server.owner !==
-      user.uid
-    ) {
-
-      throw new Error(
-        "You do not own this server."
-      );
-
-    }
-
-
-    if (
-      server.status ===
-        "provisioning"
-    ) {
-
-      throw new Error(
-        "Wait for the server to finish provisioning first."
-      );
-
-    }
-
-
-    if (
-      server.status ===
-      "offline"
-    ) {
-
-      /*
-       * Installing while offline is okay.
-       *
-       * The agent can put the plugin in the
-       * plugins folder and it will load on
-       * the next server start.
-       */
-
-    }
-
-
-    /*
-     * Create the installation job.
-     */
-
-    const job =
-      await addDoc(
-        collection(
-          db,
-          "jobs"
-        ),
-        {
-
-          owner:
-            user.uid,
-
-          serverId:
-            currentServerId,
-
-          type:
-            "installModrinth",
-
-          status:
-            "queued",
-
-          createdAt:
-            Date.now(),
-
-          /*
-           * Modrinth information
-           */
-
-          source:
-            "modrinth",
-
-          projectId:
-            plugin.projectId,
-
-          projectSlug:
-            plugin.projectSlug,
-
-          projectName:
-            plugin.projectName,
-
-          versionId:
-            plugin.versionId,
-
-          versionNumber:
-            plugin.versionNumber,
-
-          minecraftVersion:
-            plugin.minecraftVersion,
-
-          filename:
-            plugin.filename,
-
-          downloadUrl:
-            plugin.downloadUrl,
-
-          /*
-           * Tell the agent exactly where
-           * the file belongs.
-           */
-
-          installDirectory:
-            "plugins"
-
-        }
-      );
-
-
-    showMessage(
-      $("modrinthMsg"),
-      `${plugin.projectName} queued for installation.`,
-      "success"
-    );
-
-
-    /*
-     * Watch this job for completion.
-     */
-
-    watchPluginInstallJob(
-      job.id,
-      plugin.projectName
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      "Plugin installation error:",
-      error
-    );
-
-
-    showMessage(
-      $("modrinthMsg"),
-      error.message ||
-      "Failed to queue plugin installation.",
-      "error"
-    );
-
-  }
-
-}
-
-
-/* ============================================================
-   WATCH PLUGIN INSTALL JOB
-   ============================================================ */
-
-function watchPluginInstallJob(
-  jobId,
-  pluginName
-) {
-
-  const unsubscribe =
-    onSnapshot(
-      doc(
-        db,
-        "jobs",
-        jobId
-      ),
-
-      snapshot => {
-
-        if (!snapshot.exists()) {
-
-          unsubscribe();
-
-          return;
-
-        }
-
-
-        const job =
-          snapshot.data();
-
-
-        if (
-          job.status ===
-          "queued"
-        ) {
-
-          showMessage(
-            $("modrinthMsg"),
-            `${pluginName} is waiting for the hosting agent…`,
-            "warning"
-          );
-
-        }
-
-
-        else if (
-          job.status ===
-          "processing"
-        ) {
-
-          showMessage(
-            $("modrinthMsg"),
-            `${pluginName} is being installed…`,
-            "warning"
-          );
-
-        }
-
-
-        else if (
-          job.status ===
-          "completed"
-        ) {
-
-          showMessage(
-            $("modrinthMsg"),
-            `${pluginName} installed successfully.`,
-            "success"
-          );
-
-
-          refreshFiles();
-
-          unsubscribe();
-
-        }
-
-
-        else if (
-          job.status ===
-          "error"
-        ) {
-
-          showMessage(
-            $("modrinthMsg"),
-            job.error ||
-            `Failed to install ${pluginName}.`,
-            "error"
-          );
-
-
-          unsubscribe();
-
-        }
-
-      },
-
-      error => {
-
-        console.error(
-          "Plugin job listener:",
-          error
-        );
-
-        unsubscribe();
-
-      }
-    );
-
-}
-
-
-/* ============================================================
-   UPDATE PLUGIN JOB UI
-   ============================================================ */
-
-function updatePluginInstallUI(
-  jobs
-) {
-
-  if (!currentServerId) {
-
-    return;
-
-  }
-
-
-  const recent =
-    jobs
-      .filter(
-        job =>
-          job.serverId ===
-          currentServerId
-      )
-      .filter(
-        job =>
-          job.type ===
-          "installModrinth"
-      )
-      .sort(
-        (a, b) =>
-          Number(
-            b.createdAt || 0
-          ) -
-          Number(
-            a.createdAt || 0
-          )
-      );
-
-
-  if (!recent.length) {
-
-    return;
-
-  }
-
-
-  const job =
-    recent[0];
-
-
-  if (
-    job.status ===
-    "processing"
-  ) {
-
-    showMessage(
-      $("modrinthMsg"),
-      `${job.projectName || "Plugin"} is being installed…`,
-      "warning"
-    );
-
-  }
-
-  else if (
-    job.status ===
-    "completed"
-  ) {
-
-    showMessage(
-      $("modrinthMsg"),
-      `${job.projectName || "Plugin"} installed successfully.`,
-      "success"
-    );
-
-  }
-
-  else if (
-    job.status ===
-    "error"
-  ) {
-
-    showMessage(
-      $("modrinthMsg"),
-      job.error ||
-      "Plugin installation failed.",
-      "error"
-    );
-
-  }
-
-}
-
-
-/* ============================================================
-   DOWNLOAD FORMATTER
-   ============================================================ */
-
-function formatDownloads(value) {
-
-  const number =
-    Number(
-      value || 0
-    );
-
-
-  if (
-    number >=
-    1_000_000_000
-  ) {
-
-    return (
-      number /
-      1_000_000_000
-    ).toFixed(1) + "B";
-
-  }
-
-
-  if (
-    number >=
-    1_000_000
-  ) {
-
-    return (
-      number /
-      1_000_000
-    ).toFixed(1) + "M";
-
-  }
-
-
-  if (
-    number >=
-    1_000
-  ) {
-
-    return (
-      number /
-      1_000
-    ).toFixed(1) + "K";
-
-  }
-
-
-  return String(number);
-
-}
-
-
-/* ============================================================
    FIREBASE ERROR
    ============================================================ */
 
@@ -2756,9 +1729,7 @@ function showFirebaseError(
   const message =
     error?.code ===
       "permission-denied"
-
       ? "Firebase denied this operation. Check your Firestore rules."
-
       : (
           error?.message ||
           "Firebase operation failed."
