@@ -1,471 +1,387 @@
-* {
-  box-sizing: border-box;
+```css
+*{
+  box-sizing:border-box;
 }
 
-body {
-  margin: 0;
-  background: #0b1020;
-  color: #edf2ff;
-  font: 15px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+body{
+  margin:0;
+  background:#0b1020;
+  color:#edf2ff;
+  font:15px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 }
 
-.wrap {
-  max-width: 1100px;
-  margin: auto;
-  padding: 28px;
+.wrap{
+  max-width:1100px;
+  margin:auto;
+  padding:28px;
 }
-
-
-/* ============================================================
-   LAYOUT
-   ============================================================ */
 
 .top,
-.row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+.row{
+  display:flex;
+  align-items:center;
+  gap:16px;
 }
 
-.between {
-  justify-content: space-between;
+.between{
+  justify-content:space-between;
 }
 
-.end {
-  justify-content: flex-end;
+.end{
+  justify-content:flex-end;
 }
 
-
-/* ============================================================
-   BRAND
-   ============================================================ */
-
-.brand {
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
+.brand{
+  font-size:26px;
+  font-weight:800;
 }
 
-.muted {
-  color: #9aa7c2;
+.muted{
+  color:#9aa7c2;
 }
 
-
-/* ============================================================
-   CARDS
-   ============================================================ */
-
-.card {
-  background: #121a2d;
-  border: 1px solid #26334f;
-  border-radius: 16px;
-  padding: 22px;
-  box-shadow: 0 12px 35px #0003;
+.card{
+  background:#121a2d;
+  border:1px solid #26334f;
+  border-radius:16px;
+  padding:22px;
+  box-shadow:0 12px 35px #0003;
 }
 
-.auth {
-  max-width: 430px;
-  margin: 70px auto;
+.auth{
+  max-width:430px;
+  margin:70px auto;
 }
 
 .auth h1,
 h1,
 h2,
-h3 {
-  margin-top: 0;
+h3{
+  margin-top:0;
 }
 
-
-/* ============================================================
-   FORMS
-   ============================================================ */
-
-form {
-  display: grid;
-  gap: 12px;
+form{
+  display:grid;
+  gap:12px;
 }
 
 input,
 select,
-button {
-  border-radius: 10px;
-  border: 1px solid #34425f;
-  padding: 11px 13px;
-  font: inherit;
+button{
+  border-radius:10px;
+  border:1px solid #34425f;
+  padding:11px 13px;
+  font:inherit;
 }
 
 input,
-select {
-  background: #0d1425;
-  color: #fff;
-  width: 100%;
+select{
+  background:#0d1425;
+  color:#fff;
+  width:100%;
 }
 
-input::placeholder {
-  color: #71809c;
+button{
+  background:#6ea8fe;
+  color:#08111f;
+  font-weight:700;
+  cursor:pointer;
 }
 
-button {
-  background: #6ea8fe;
-  color: #08111f;
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    transform 0.12s ease,
-    opacity 0.12s ease,
-    background 0.12s ease;
+button:hover{
+  filter:brightness(1.08);
 }
 
-button:hover {
-  opacity: 0.9;
+button:disabled{
+  cursor:not-allowed;
+  opacity:.55;
 }
 
-button:active {
-  transform: translateY(1px);
+.secondary{
+  background:#1b2740;
+  color:#dbe7ff;
 }
 
-.secondary {
-  background: #1b2740;
-  color: #dbe7ff;
+.danger{
+  background:#d95c6a;
+  color:#fff;
 }
 
-.danger {
-  background: #d95c6a;
-  color: #fff;
+.linkbtn{
+  background:none;
+  border:0;
+  color:#83b7ff;
+  padding:8px 0;
 }
 
-.linkbtn {
-  background: none;
-  border: 0;
-  color: #83b7ff;
-  padding: 8px 0;
+.msg{
+  margin-top:12px;
+  min-height:20px;
+  color:#ffb6bd;
 }
 
-.linkbtn:hover {
-  background: none;
-  opacity: 1;
+.hidden{
+  display:none!important;
 }
 
-
-/* ============================================================
-   MESSAGES
-   ============================================================ */
-
-.msg {
-  margin-top: 12px;
-  min-height: 20px;
-  color: #ffb6bd;
-}
-
-.msg.success {
-  color: #8ff0b0;
-}
-
-.msg.warning {
-  color: #ffd27a;
-}
-
-.msg.error {
-  color: #ff9da8;
-}
-
-
-/* ============================================================
-   HIDDEN
-   ============================================================ */
-
-.hidden {
-  display: none !important;
-}
-
-
-/* ============================================================
-   SERVER GRID
-   ============================================================ */
-
-.grid {
-  display: grid;
+.grid{
+  display:grid;
   grid-template-columns:
-    repeat(
-      auto-fit,
-      minmax(250px, 1fr)
-    );
-  gap: 15px;
-  margin: 22px 0;
+    repeat(auto-fit,minmax(250px,1fr));
+  gap:15px;
+  margin:22px 0;
 }
 
-.server {
-  cursor: pointer;
-  transition:
-    transform 0.15s ease,
-    border-color 0.15s ease;
+.server{
+  cursor:pointer;
 }
 
-.server:hover {
-  transform: translateY(-2px);
-  border-color: #3d5682;
+.server h3{
+  margin-bottom:5px;
 }
 
-.server h3 {
-  margin-bottom: 5px;
+.pill{
+  padding:5px 10px;
+  border-radius:999px;
+  background:#26334f;
+  text-transform:capitalize;
 }
 
-
-/* ============================================================
-   STATUS
-   ============================================================ */
-
-.pill {
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: #26334f;
-  text-transform: capitalize;
-  white-space: nowrap;
+.actions{
+  display:flex;
+  gap:10px;
+  margin:18px 0;
 }
 
-
-/* ============================================================
-   ACTIONS
-   ============================================================ */
-
-.actions {
-  display: flex;
-  gap: 10px;
-  margin: 18px 0;
+.actions button{
+  min-width:90px;
 }
 
-.actions button {
-  min-width: 90px;
+pre{
+  background:#070b14;
+  border:1px solid #222d45;
+  border-radius:10px;
+  padding:14px;
+  min-height:220px;
+  max-height:400px;
+  overflow:auto;
+  white-space:pre-wrap;
 }
 
-
-/* ============================================================
-   CONSOLE
-   ============================================================ */
-
-.console {
-  background: #070b14;
-  border: 1px solid #222d45;
-  border-radius: 10px;
-  padding: 14px;
-  min-height: 220px;
-  max-height: 400px;
-  overflow: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
+.filebar{
+  display:flex;
+  gap:10px;
 }
 
-
-/* ============================================================
-   COMMAND BAR
-   ============================================================ */
-
-.commandbar {
-  display: flex;
-  gap: 10px;
+.files{
+  margin-top:12px;
 }
 
-.commandbar input {
-  flex: 1;
+.file{
+  padding:10px;
+  border-bottom:1px solid #26334f;
+}
+
+.dialog{
+  background:#121a2d;
+  color:#fff;
+  border:1px solid #34425f;
+  border-radius:16px;
+  padding:22px;
+  width:min(420px,90vw);
+}
+
+dialog::backdrop{
+  background:#0008;
 }
 
 
 /* ============================================================
-   MODRINTH PLUGINS
+   MODRINTH
    ============================================================ */
 
-.plugins-section {
-  margin-top: 30px;
-  margin-bottom: 30px;
-  padding-top: 8px;
-  border-top: 1px solid #26334f;
+.modrinth-box{
+  margin-top:12px;
+  padding:16px;
+  background:#0d1425;
+  border:1px solid #26334f;
+  border-radius:12px;
 }
 
-.section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
+.modrinth-help{
+  margin-top:0;
+  margin-bottom:14px;
 }
 
-.section-heading h3 {
-  margin-bottom: 4px;
-}
-
-.modrinth-search {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.modrinth-search input {
-  flex: 1;
-}
-
-.modrinth-search button {
-  min-width: 100px;
-}
-
-
-/* ============================================================
-   PLUGIN RESULTS
-   ============================================================ */
-
-.plugin-grid {
-  display: grid;
+.modrinth-search{
+  display:grid;
   grid-template-columns:
-    repeat(
-      auto-fit,
-      minmax(260px, 1fr)
-    );
-  gap: 12px;
-  margin-top: 12px;
+    minmax(0,1fr) 190px auto;
+  gap:10px;
 }
 
-.plugin-card {
-  background: #0d1425;
-  border: 1px solid #26334f;
-  border-radius: 12px;
-  padding: 15px;
-  transition:
-    transform 0.15s ease,
-    border-color 0.15s ease;
+.modrinth-results{
+  display:grid;
+  gap:12px;
+  margin-top:16px;
 }
 
-.plugin-card:hover {
-  transform: translateY(-2px);
-  border-color: #3d5682;
+.modrinth-empty{
+  padding:18px;
+  text-align:center;
+  border:1px dashed #34425f;
+  border-radius:10px;
 }
 
-.plugin-card-top {
-  display: flex;
-  gap: 12px;
-  align-items: center;
+.modrinth-loading{
+  padding:18px;
+  text-align:center;
+  color:#9aa7c2;
 }
 
-.plugin-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
-  object-fit: cover;
-  background: #1b2740;
-  flex-shrink: 0;
+.modrinth-card{
+  display:grid;
+  grid-template-columns:56px minmax(0,1fr) auto;
+  gap:14px;
+  align-items:center;
+  padding:14px;
+  background:#121a2d;
+  border:1px solid #26334f;
+  border-radius:12px;
 }
 
-.plugin-card h4 {
-  margin: 0 0 4px;
-  font-size: 16px;
+.modrinth-icon{
+  width:56px;
+  height:56px;
+  border-radius:10px;
+  object-fit:cover;
+  background:#070b14;
+  border:1px solid #26334f;
 }
 
-.plugin-description {
-  color: #9aa7c2;
-  margin: 12px 0;
-  line-height: 1.45;
-  min-height: 42px;
-
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.modrinth-info{
+  min-width:0;
 }
 
-.plugin-meta {
-  color: #7f8da8;
-  font-size: 13px;
-  margin-bottom: 12px;
+.modrinth-title{
+  margin:0 0 6px;
+  font-size:17px;
 }
 
-.plugin-actions {
-  display: flex;
-  gap: 8px;
+.modrinth-title a{
+  color:#edf2ff;
+  text-decoration:none;
 }
 
-.plugin-actions button {
-  flex: 1;
+.modrinth-title a:hover{
+  color:#83b7ff;
 }
 
-
-/* ============================================================
-   FILES
-   ============================================================ */
-
-.filebar {
-  display: flex;
-  gap: 10px;
+.modrinth-description{
+  color:#9aa7c2;
+  font-size:14px;
+  line-height:1.4;
+  margin-bottom:9px;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
 }
 
-.filebar input {
-  flex: 1;
+.modrinth-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
 }
 
-.files {
-  margin-top: 12px;
+.modrinth-tag{
+  padding:4px 8px;
+  border-radius:999px;
+  background:#26334f;
+  color:#cbd7ef;
+  font-size:12px;
 }
 
-.file {
-  padding: 10px;
-  border-bottom: 1px solid #26334f;
-  color: #dbe7ff;
+.modrinth-actions{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  min-width:135px;
 }
 
-
-/* ============================================================
-   DIALOG
-   ============================================================ */
-
-.dialog {
-  background: #121a2d;
-  color: #fff;
-  border: 1px solid #34425f;
-  border-radius: 16px;
-  padding: 22px;
-  width: min(420px, 90vw);
-  box-shadow: 0 25px 70px #0008;
+.modrinth-download{
+  width:100%;
 }
 
-.dialog h2 {
-  margin-bottom: 18px;
+.modrinth-project{
+  text-align:center;
+  color:#83b7ff;
+  font-size:13px;
+  text-decoration:none;
 }
 
-dialog::backdrop {
-  background: #0008;
+.modrinth-project:hover{
+  text-decoration:underline;
 }
 
 
 /* ============================================================
-   RESPONSIVE
+   MOBILE
    ============================================================ */
 
-@media (max-width: 600px) {
+@media(max-width:700px){
 
-  .wrap {
-    padding: 16px;
-  }
-
-  .top {
-    align-items: flex-start;
+  .wrap{
+    padding:16px;
   }
 
   .actions,
-  .filebar,
-  .commandbar,
-  .modrinth-search {
-    flex-wrap: wrap;
+  .filebar{
+    flex-wrap:wrap;
   }
 
-  .filebar input,
-  .commandbar input,
-  .modrinth-search input {
-    min-width: 100%;
+  .filebar input{
+    min-width:100%;
   }
 
-  .actions button,
-  .modrinth-search button {
-    flex: 1;
+  .modrinth-search{
+    grid-template-columns:1fr;
   }
 
-  .plugin-grid {
-    grid-template-columns: 1fr;
+  .modrinth-card{
+    grid-template-columns:48px minmax(0,1fr);
+  }
+
+  .modrinth-icon{
+    width:48px;
+    height:48px;
+  }
+
+  .modrinth-actions{
+    grid-column:1/-1;
+    flex-direction:row;
+    min-width:0;
+  }
+
+  .modrinth-actions > *{
+    flex:1;
   }
 
 }
+
+@media(max-width:480px){
+
+  .top{
+    align-items:flex-start;
+  }
+
+  .top .secondary{
+    margin-left:auto;
+  }
+
+  .modrinth-actions{
+    flex-direction:column;
+  }
+
+}
+```
