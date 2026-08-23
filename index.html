@@ -64,7 +64,48 @@
 
 
   <!-- APP -->
+<section id="modrinthPanel" class="card modrinth-panel">
 
+  <div class="row between modrinth-header">
+    <div>
+      <h2>Fabric Mods</h2>
+      <div class="muted">
+        Search and download Fabric mods from Modrinth.
+      </div>
+    </div>
+
+    <span class="pill">Fabric</span>
+  </div>
+
+  <form id="modrinthSearchForm" class="modrinth-search">
+
+    <input
+      id="modrinthSearch"
+      type="search"
+      placeholder="Search Fabric mods..."
+      autocomplete="off"
+    >
+
+    <select id="modrinthVersion">
+      <option value="1.21.11">1.21.11</option>
+      <option value="1.21.10">1.21.10</option>
+    </select>
+
+    <button type="submit">
+      Search
+    </button>
+
+  </form>
+
+  <div id="modrinthMsg" class="msg"></div>
+
+  <div id="modrinthResults" class="modrinth-results">
+    <div class="muted">
+      Search for a Fabric mod to get started.
+    </div>
+  </div>
+
+</section>
   <section id="app" class="hidden">
 
     <div class="row between">
