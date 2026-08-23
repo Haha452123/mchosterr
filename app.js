@@ -29,14 +29,15 @@ import {
    FIREBASE
    ============================================================ */
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAew9fVw91DarhE9mUUIyV2Z2sCVxrAX44",
-  authDomain: "mchost-9516b.firebaseapp.com",
-  projectId: "mchost-9516b",
-  storageBucket: "mchost-9516b.firebasestorage.app",
-  messagingSenderId: "692774609042",
-  appId: "1:692774609042:web:dd447dc87803450d22864b",
-  measurementId: "G-ED4W6V8CNT"
+ const firebaseConfig = {
+  "apiKey": "AIzaSyAcQu7U91BAoVuVdCzFrVfqvzGK7iyJnjA",
+  "authDomain": "p9w-26379.firebaseapp.com",
+  "databaseURL": "https://p9w-26379-default-rtdb.firebaseio.com",
+  "projectId": "p9w-26379",
+  "storageBucket": "p9w-26379.firebasestorage.app",
+  "messagingSenderId": "509609712694",
+  "appId": "1:509609712694:web:51d3e090f48a6a6c4e8c97",
+  "measurementId": "G-B0ZX1K094H"
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
