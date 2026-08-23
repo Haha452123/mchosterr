@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="en">
 <head>
@@ -20,7 +21,6 @@
       Log out
     </button>
   </header>
- 
 
   <!-- AUTH -->
 
@@ -82,22 +82,17 @@
     </div>
 
 
-    <!-- SERVER LIST -->
-
     <div id="servers" class="grid"></div>
 
 
-    <!-- SERVER PANEL -->
+    <!-- SERVER -->
 
     <section id="serverPanel" class="card hidden">
 
       <div class="row between">
 
         <div>
-
-          <h2 id="serverName">
-            Server
-          </h2>
+          <h2 id="serverName">Server</h2>
 
           <div
             id="serverAddress"
@@ -105,7 +100,6 @@
           >
             Not online
           </div>
-
         </div>
 
         <span
@@ -117,8 +111,6 @@
 
       </div>
 
-
-      <!-- SERVER ACTIONS -->
 
       <div class="actions">
 
@@ -151,10 +143,7 @@
 
       <h3>Command line</h3>
 
-      <form
-        id="commandForm"
-        class="commandbar"
-      >
+      <form id="commandForm" class="commandbar">
 
         <input
           id="commandInput"
@@ -170,60 +159,7 @@
 
       </form>
 
-      <div
-        id="commandMsg"
-        class="msg"
-      ></div>
-
-
-      <!-- PAPER PLUGINS -->
-
-      <section class="plugins-section">
-
-        <div class="section-heading">
-
-          <div>
-            <h3>Paper Plugins</h3>
-
-            <div class="muted">
-              Search and install Paper plugins from Modrinth.
-            </div>
-          </div>
-
-        </div>
-
-
-        <div class="modrinth-search">
-
-          <input
-            id="pluginSearch"
-            type="search"
-            placeholder="Search Paper plugins on Modrinth..."
-            autocomplete="off"
-          >
-
-          <button
-            id="pluginSearchButton"
-            type="button"
-          >
-            Search
-          </button>
-
-        </div>
-
-
-        <div
-          id="pluginMsg"
-          class="msg"
-        ></div>
-
-
-        <div
-          id="pluginResults"
-          class="plugin-grid"
-        ></div>
-
-      </section>
+      <div id="commandMsg" class="msg"></div>
 
 
       <!-- FILES -->
@@ -247,10 +183,68 @@
 
       </div>
 
-      <div
-        id="files"
-        class="files"
-      ></div>
+      <div id="files" class="files"></div>
+
+
+      <!-- MODRINTH -->
+
+      <h3>Paper Plugins</h3>
+
+      <div class="modrinth-box">
+
+        <p class="muted modrinth-help">
+          Search Modrinth for Paper plugins compatible
+          with this Minecraft server.
+        </p>
+
+        <form
+          id="modrinthSearchForm"
+          class="modrinth-search"
+        >
+
+          <input
+            id="modrinthSearch"
+            type="search"
+            placeholder="Search Paper plugins..."
+            autocomplete="off"
+            required
+          >
+
+          <select id="modrinthVersion">
+
+            <option value="1.21.11">
+              Minecraft 1.21.11
+            </option>
+
+            <option value="1.21.10">
+              Minecraft 1.21.10
+            </option>
+
+          </select>
+
+          <button type="submit">
+            Search
+          </button>
+
+        </form>
+
+        <div
+          id="modrinthMsg"
+          class="msg"
+        ></div>
+
+        <div
+          id="modrinthResults"
+          class="modrinth-results"
+        >
+
+          <div class="modrinth-empty muted">
+            Search for a plugin to get started.
+          </div>
+
+        </div>
+
+      </div>
 
     </section>
 
@@ -271,14 +265,12 @@
 
     <h2>Create Minecraft server</h2>
 
-
     <input
       id="serverNameInput"
       placeholder="Server name"
       maxlength="32"
       required
     >
-
 
     <select id="versionInput">
 
@@ -310,10 +302,7 @@
     </select>
 
 
-    <div
-      id="ramNotice"
-      class="msg"
-    ></div>
+    <div id="ramNotice" class="msg"></div>
 
 
     <div class="row end">
@@ -325,10 +314,7 @@
         Cancel
       </button>
 
-      <button
-        id="createServerButton"
-        value="create"
-      >
+      <button id="createServerButton">
         Create
       </button>
 
@@ -339,10 +325,8 @@
 </dialog>
 
 
-<script
-  type="module"
-  src="./app.js"
-></script>
+<script type="module" src="./app.js"></script>
 
 </body>
 </html>
+```
