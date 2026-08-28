@@ -173,6 +173,14 @@
         >
 
         <button
+          id="openFilePathButton"
+          class="secondary"
+          type="button"
+        >
+          Open
+        </button>
+
+        <button
           id="refreshFiles"
           class="secondary"
           type="button"
@@ -182,7 +190,49 @@
 
       </div>
 
+      <div class="muted filehint">
+        Type a path above and click Open to view or create a file
+        (even one not shown in the list yet).
+      </div>
+
       <div id="files" class="files"></div>
+
+      <!-- FILE VIEWER / EDITOR -->
+
+      <div id="fileViewer" class="fileviewer hidden">
+
+        <div class="row between">
+          <div id="fileViewerPath" class="muted filepath">
+            filename
+          </div>
+
+          <button
+            id="closeFileViewer"
+            class="secondary"
+            type="button"
+          >
+            Close
+          </button>
+        </div>
+
+        <textarea
+          id="fileContent"
+          class="filecontent"
+          spellcheck="false"
+        ></textarea>
+
+        <div class="row end">
+          <button
+            id="saveFileButton"
+            type="button"
+          >
+            Save
+          </button>
+        </div>
+
+        <div id="fileViewerMsg" class="msg"></div>
+
+      </div>
 
 
       <!-- MODRINTH -->
@@ -242,6 +292,45 @@
           </div>
 
         </div>
+
+      </div>
+
+
+      <!-- CUSTOM DOMAIN -->
+
+      <h3>Custom Domain</h3>
+
+      <div class="domain-box">
+
+        <p class="muted modrinth-help">
+          Point your own domain at this server. Submitting a
+          request opens a verification ticket — you'll need to
+          confirm ownership in our Discord server before it goes
+          live.
+        </p>
+
+        <form
+          id="domainForm"
+          class="domain-form"
+        >
+
+          <input
+            id="domainInput"
+            type="text"
+            placeholder="mc.example.com"
+            autocomplete="off"
+            required
+          >
+
+          <button id="domainSubmit" type="submit">
+            Request
+          </button>
+
+        </form>
+
+        <div id="domainMsg" class="msg"></div>
+
+        <div id="domainStatus" class="domain-status"></div>
 
       </div>
 
