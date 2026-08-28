@@ -59,6 +59,13 @@ const HOSTNAME =
 const MAX_SERVERS = 1;
 const FREE_RAM_LIMIT = 3072;
 
+/*
+ * Where users are told to go to get a domain
+ * verified. Update this to your actual Discord invite.
+ */
+const DISCORD_INVITE_URL =
+  "https://discord.gg/your-invite";
+
 
 /* ============================================================
    STATE
@@ -69,8 +76,13 @@ let currentServerId = null;
 let serverUnsubscribe = null;
 let serversUnsubscribe = null;
 let jobsUnsubscribe = null;
+let filesUnsubscribe = null;
+let domainTicketsUnsubscribe = null;
 
 let registerMode = false;
+
+let openFilePath = null;
+let latestDomainTickets = [];
 
 
 /* ============================================================
@@ -106,6 +118,120 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+
+}
+
+
+function formatBytes(value) {
+
+  const bytes =
+    Number(value || 0);
+
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  if (bytes >= 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+
+  return `${bytes} B`;
+}
+
+
+/*
+ * Waits for a job document to reach a terminal state
+ * ("completed" or "failed") and resolves with its data.
+ * Used by any UI action (file read/write, etc.) that needs
+ * to know the outcome of a job, not just fire-and-forget it.
+ */
+
+function waitForJob(
+  jobRef,
+  {
+    onUpdate = null,
+    timeoutMs = 20000
+  } = {}
+) {
+
+  return new Promise(
+    (resolve, reject) => {
+
+      let settled = false;
+
+      const timer =
+        setTimeout(
+          () => {
+
+            if (settled) return;
+
+            settled = true;
+
+            unsubscribe();
+
+            reject(
+              new Error(
+                "Timed out waiting for the hosting agent."
+              )
+            );
+
+          },
+          timeoutMs
+        );
+
+      const unsubscribe =
+        onSnapshot(
+          jobRef,
+
+          snapshot => {
+
+            if (!snapshot.exists()) {
+              return;
+            }
+
+            const job =
+              snapshot.data();
+
+            if (onUpdate) {
+              onUpdate(job);
+            }
+
+            if (
+              job.status === "completed" ||
+              job.status === "failed"
+            ) {
+
+              if (settled) return;
+
+              settled = true;
+
+              clearTimeout(timer);
+
+              unsubscribe();
+
+              resolve(job);
+
+            }
+
+          },
+
+          error => {
+
+            if (settled) return;
+
+            settled = true;
+
+            clearTimeout(timer);
+
+            unsubscribe();
+
+            reject(error);
+
+          }
+        );
+
+    }
+  );
 
 }
 
@@ -159,6 +285,33 @@ function isPendingStatus(status) {
     "restarting",
     "pending"
   ].includes(status);
+
+}
+
+
+function prettyDomainStatus(status) {
+
+  switch (status) {
+
+    case "waiting_for_verification":
+      return "Waiting for verification in Discord";
+
+    case "queued":
+      return "Verified — queued for setup";
+
+    case "processing":
+      return "Setting up…";
+
+    case "completed":
+      return "Active";
+
+    case "failed":
+      return "Failed";
+
+    default:
+      return status || "Unknown";
+
+  }
 
 }
 
@@ -317,7 +470,21 @@ onAuthStateChanged(
         jobsUnsubscribe = null;
       }
 
+      if (filesUnsubscribe) {
+        filesUnsubscribe();
+        filesUnsubscribe = null;
+      }
+
+      if (domainTicketsUnsubscribe) {
+        domainTicketsUnsubscribe();
+        domainTicketsUnsubscribe = null;
+      }
+
       currentServerId = null;
+      openFilePath = null;
+      latestDomainTickets = [];
+
+      closeFileViewer();
 
       return;
     }
@@ -348,6 +515,8 @@ onAuthStateChanged(
       watchServers(user.uid);
 
       watchUserJobs(user.uid);
+
+      watchDomainTickets(user.uid);
 
     } catch (error) {
 
@@ -470,6 +639,13 @@ function watchServers(uid) {
             ?.classList
             .add("hidden");
 
+          if (filesUnsubscribe) {
+            filesUnsubscribe();
+            filesUnsubscribe = null;
+          }
+
+          closeFileViewer();
+
         }
 
 
@@ -490,6 +666,10 @@ function watchServers(uid) {
 
           updateServerPanel(
             selected
+          );
+
+          renderDomainStatus(
+            latestDomainTickets
           );
 
         }
@@ -606,12 +786,19 @@ function renderServers(
       "muted";
 
     address.textContent =
-      server.address ||
       (
-        isPendingStatus(status)
-          ? "Waiting for hosting agent…"
-          : "Not online"
-      );
+        server.customDomain &&
+        server.customDomainStatus === "active"
+      )
+        ? server.customDomain
+        : (
+            server.address ||
+            (
+              isPendingStatus(status)
+                ? "Waiting for hosting agent…"
+                : "Not online"
+            )
+          );
 
 
     const info =
@@ -672,8 +859,15 @@ async function openServer(
     .remove("hidden");
 
 
+  closeFileViewer();
+
+
   updateServerPanel(
     server
+  );
+
+  renderDomainStatus(
+    latestDomainTickets
   );
 
 
@@ -723,6 +917,8 @@ async function openServer(
     );
 
 
+  watchServerFiles(serverId);
+
   await refreshFiles();
 
 }
@@ -751,9 +947,20 @@ function updateServerPanel(
    *
    * Don't show "Not online" while the
    * agent is still working.
+   *
+   * A verified custom domain takes priority
+   * over the auto-assigned address.
    */
 
   if (
+    server.customDomain &&
+    server.customDomainStatus === "active"
+  ) {
+
+    $("serverAddress").textContent =
+      server.customDomain;
+
+  } else if (
     server.address
   ) {
 
@@ -966,19 +1173,35 @@ function updatePendingUI(
   }
 
 
+  /*
+   * File and command jobs shouldn't hijack the
+   * server status pill — they're their own thing.
+   */
+
+  const silentJobTypes = [
+    "command",
+    "list-files",
+    "read-file",
+    "write-file"
+  ];
+
+  if (
+    silentJobTypes.includes(
+      job.type
+    )
+  ) {
+
+    return;
+
+  }
+
+
   $("serverStatus").textContent =
     status;
 
 
-  if (
-    job.type !==
-    "command"
-  ) {
-
-    $("serverAddress").textContent =
-      "Waiting for hosting agent…";
-
-  }
+  $("serverAddress").textContent =
+    "Waiting for hosting agent…";
 
 }
 
@@ -1598,12 +1821,169 @@ $("commandForm")?.addEventListener(
 
 /* ============================================================
    FILES
-   ============================================================ */
+   ============================================================ *
+ *
+ * Fixed flow:
+ *
+ *   1. Refresh (or opening a server) queues a
+ *      "list-files" job for the hosting agent.
+ *   2. The agent scans the server's directory and
+ *      writes what it finds into "serverFiles",
+ *      scoped to this server.
+ *   3. The browser watches "serverFiles" live, so the
+ *      list updates the moment the agent finishes —
+ *      no manual re-query needed.
+ *   4. Clicking a file queues a "read-file" job and
+ *      waits for the agent's result; saving queues a
+ *      "write-file" job the same way.
+ *
+ * Previously the UI only ever read "serverFiles" —
+ * nothing ever wrote to it, so the list was always
+ * empty, and there was no way to view or edit a file's
+ * contents at all.
+ */
 
 $("refreshFiles")?.addEventListener(
   "click",
   refreshFiles
 );
+
+
+$("openFilePathButton")?.addEventListener(
+  "click",
+  () => {
+
+    const path =
+      $("filePath")
+        ?.value
+        .trim();
+
+    if (!path) {
+
+      return;
+
+    }
+
+    openFile(path);
+
+  }
+);
+
+
+function watchServerFiles(serverId) {
+
+  if (filesUnsubscribe) {
+
+    filesUnsubscribe();
+
+  }
+
+
+  const q =
+    query(
+      collection(db, "serverFiles"),
+      where(
+        "serverId",
+        "==",
+        serverId
+      )
+    );
+
+
+  filesUnsubscribe =
+    onSnapshot(
+      q,
+
+      snapshot => {
+
+        const files =
+          snapshot.docs.map(
+            item => ({
+              id: item.id,
+              ...item.data()
+            })
+          );
+
+
+        files.sort(
+          (a, b) =>
+            String(a.path || "")
+              .localeCompare(
+                String(b.path || "")
+              )
+        );
+
+
+        renderFiles(files);
+
+      },
+
+      error => {
+
+        console.error(
+          "Files listener:",
+          error
+        );
+
+      }
+    );
+
+}
+
+
+function renderFiles(files) {
+
+  const box =
+    $("files");
+
+  if (!box) return;
+
+  box.innerHTML = "";
+
+
+  if (!files.length) {
+
+    box.innerHTML = `
+      <div class="muted">
+        No files reported yet. Click Refresh to scan,
+        or type a path above and click Open.
+      </div>
+    `;
+
+    return;
+
+  }
+
+
+  for (const file of files) {
+
+    const item =
+      document.createElement(
+        "div"
+      );
+
+    item.className =
+      "file";
+
+    item.textContent =
+      `${file.path} · ${formatBytes(file.size)}`;
+
+    item.addEventListener(
+      "click",
+      () => {
+
+        openFile(
+          file.path
+        );
+
+      }
+    );
+
+    box.appendChild(item);
+
+  }
+
+}
 
 
 async function refreshFiles() {
@@ -1624,76 +2004,24 @@ async function refreshFiles() {
 
   try {
 
-    const q =
-      query(
-        collection(
-          db,
-          "serverFiles"
-        ),
+    await addDoc(
+      collection(db, "jobs"),
+      {
 
-        where(
-          "owner",
-          "==",
-          user.uid
-        ),
+        owner:
+          user.uid,
 
-        where(
-          "serverId",
-          "==",
-          currentServerId
-        )
-      );
+        serverId:
+          currentServerId,
 
+        type:
+          "list-files",
 
-    const snapshot =
-      await getDocs(q);
+        status:
+          "queued",
 
-
-    const files =
-      $("files");
-
-
-    files.innerHTML = "";
-
-
-    if (snapshot.empty) {
-
-      files.innerHTML = `
-        <div class="muted">
-          No files reported yet.
-        </div>
-      `;
-
-      return;
-
-    }
-
-
-    snapshot.forEach(
-      item => {
-
-        const data =
-          item.data();
-
-
-        const file =
-          document.createElement(
-            "div"
-          );
-
-
-        file.className =
-          "file";
-
-
-        file.textContent =
-          data.path ||
-          item.id;
-
-
-        files.appendChild(
-          file
-        );
+        createdAt:
+          Date.now()
 
       }
     );
@@ -1702,13 +2030,307 @@ async function refreshFiles() {
   } catch (error) {
 
     console.error(
-      "File error:",
+      "File refresh error:",
       error
     );
 
   }
 
 }
+
+
+/* ============================================================
+   FILE VIEWER / EDITOR
+   ============================================================ */
+
+async function openFile(filePath) {
+
+  const user =
+    auth.currentUser;
+
+
+  if (
+    !user ||
+    !currentServerId
+  ) {
+
+    return;
+
+  }
+
+
+  openFilePath =
+    filePath;
+
+
+  $("fileViewer")
+    ?.classList
+    .remove("hidden");
+
+  $("fileViewerPath").textContent =
+    filePath;
+
+  $("fileContent").value =
+    "Loading…";
+
+  $("fileContent").disabled =
+    true;
+
+  $("saveFileButton").disabled =
+    true;
+
+  showMessage(
+    $("fileViewerMsg"),
+    ""
+  );
+
+
+  try {
+
+    const jobRef =
+      await addDoc(
+        collection(db, "jobs"),
+        {
+
+          owner:
+            user.uid,
+
+          serverId:
+            currentServerId,
+
+          type:
+            "read-file",
+
+          path:
+            filePath,
+
+          status:
+            "queued",
+
+          createdAt:
+            Date.now()
+
+        }
+      );
+
+
+    const job =
+      await waitForJob(jobRef);
+
+
+    if (
+      openFilePath !==
+      filePath
+    ) {
+
+      /*
+       * The user opened a different file while
+       * this read was in flight — ignore.
+       */
+
+      return;
+
+    }
+
+
+    if (job.status === "completed") {
+
+      $("fileContent").value =
+        job.result || "";
+
+      $("fileContent").disabled =
+        false;
+
+      $("saveFileButton").disabled =
+        false;
+
+    } else {
+
+      $("fileContent").value =
+        "";
+
+      showMessage(
+        $("fileViewerMsg"),
+        job.error ||
+          "Failed to read file.",
+        "error"
+      );
+
+    }
+
+
+  } catch (error) {
+
+    console.error(
+      "File read error:",
+      error
+    );
+
+    $("fileContent").value =
+      "";
+
+    showMessage(
+      $("fileViewerMsg"),
+      error.message ||
+        "Failed to read file.",
+      "error"
+    );
+
+  }
+
+}
+
+
+function closeFileViewer() {
+
+  openFilePath = null;
+
+  $("fileViewer")
+    ?.classList
+    .add("hidden");
+
+  const content =
+    $("fileContent");
+
+  if (content) {
+    content.value = "";
+  }
+
+  showMessage(
+    $("fileViewerMsg"),
+    ""
+  );
+
+}
+
+
+$("closeFileViewer")?.addEventListener(
+  "click",
+  closeFileViewer
+);
+
+
+$("saveFileButton")?.addEventListener(
+  "click",
+  async () => {
+
+    const user =
+      auth.currentUser;
+
+
+    if (
+      !user ||
+      !currentServerId ||
+      !openFilePath
+    ) {
+
+      return;
+
+    }
+
+
+    const savingPath =
+      openFilePath;
+
+
+    try {
+
+      $("saveFileButton").disabled =
+        true;
+
+      showMessage(
+        $("fileViewerMsg"),
+        "Saving…"
+      );
+
+
+      const jobRef =
+        await addDoc(
+          collection(db, "jobs"),
+          {
+
+            owner:
+              user.uid,
+
+            serverId:
+              currentServerId,
+
+            type:
+              "write-file",
+
+            path:
+              savingPath,
+
+            content:
+              $("fileContent").value,
+
+            status:
+              "queued",
+
+            createdAt:
+              Date.now()
+
+          }
+        );
+
+
+      const job =
+        await waitForJob(jobRef);
+
+
+      if (
+        openFilePath !==
+        savingPath
+      ) {
+
+        return;
+
+      }
+
+
+      if (job.status === "completed") {
+
+        showMessage(
+          $("fileViewerMsg"),
+          "Saved.",
+          "success"
+        );
+
+      } else {
+
+        showMessage(
+          $("fileViewerMsg"),
+          job.error ||
+            "Failed to save file.",
+          "error"
+        );
+
+      }
+
+
+    } catch (error) {
+
+      console.error(
+        "File save error:",
+        error
+      );
+
+      showMessage(
+        $("fileViewerMsg"),
+        error.message ||
+          "Failed to save file.",
+        "error"
+      );
+
+    } finally {
+
+      $("saveFileButton").disabled =
+        false;
+
+    }
+
+  }
+);
 
 
 /* ============================================================
@@ -2317,4 +2939,268 @@ function formatDownloads(value) {
   }
 
   return String(number);
+}
+
+
+/* ============================================================
+   CUSTOM DOMAIN — VERIFICATION TICKETS
+   ============================================================ *
+ *
+ * Flow:
+ *
+ *   1. User submits a domain here.
+ *   2. A "domainTickets" doc is created with
+ *      status "waiting_for_verification".
+ *   3. The UI tells them to open a Discord ticket and
+ *      give the domain/request info there.
+ *   4. A human on Discord verifies they control the
+ *      domain, then manually flips the ticket's status
+ *      from "waiting_for_verification" to "queued" in
+ *      Firestore.
+ *   5. The hosting agent picks up "queued" tickets and
+ *      wires the domain to the server.
+ *
+ * This page never sets a ticket to "queued" itself —
+ * that transition only happens after a human verifies
+ * ownership.
+ */
+
+$("domainForm")?.addEventListener(
+  "submit",
+  async event => {
+
+    event.preventDefault();
+
+
+    const user =
+      auth.currentUser;
+
+
+    if (
+      !user ||
+      !currentServerId
+    ) {
+
+      showMessage(
+        $("domainMsg"),
+        "Select a server first.",
+        "error"
+      );
+
+      return;
+
+    }
+
+
+    const domain =
+      $("domainInput")
+        .value
+        .trim()
+        .toLowerCase();
+
+
+    if (!domain) {
+
+      return;
+
+    }
+
+
+    try {
+
+      $("domainSubmit").disabled =
+        true;
+
+      await addDoc(
+        collection(db, "domainTickets"),
+        {
+
+          owner:
+            user.uid,
+
+          email:
+            user.email || "",
+
+          serverId:
+            currentServerId,
+
+          domain,
+
+          status:
+            "waiting_for_verification",
+
+          createdAt:
+            Date.now()
+
+        }
+      );
+
+
+      $("domainInput").value =
+        "";
+
+
+      showMessage(
+        $("domainMsg"),
+        `Request submitted for ${domain}. Open a ticket in our ` +
+        `Discord server (${DISCORD_INVITE_URL}) and share this ` +
+        `domain so we can verify you control it.`,
+        "success"
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        "Domain ticket error:",
+        error
+      );
+
+      showFirebaseError(
+        error,
+        $("domainMsg")
+      );
+
+    } finally {
+
+      $("domainSubmit").disabled =
+        false;
+
+    }
+
+  }
+);
+
+
+function watchDomainTickets(uid) {
+
+  if (domainTicketsUnsubscribe) {
+
+    domainTicketsUnsubscribe();
+
+  }
+
+
+  const q =
+    query(
+      collection(db, "domainTickets"),
+      where(
+        "owner",
+        "==",
+        uid
+      )
+    );
+
+
+  domainTicketsUnsubscribe =
+    onSnapshot(
+      q,
+
+      snapshot => {
+
+        latestDomainTickets =
+          snapshot.docs.map(
+            item => ({
+              id: item.id,
+              ...item.data()
+            })
+          );
+
+
+        renderDomainStatus(
+          latestDomainTickets
+        );
+
+      },
+
+      error => {
+
+        console.error(
+          "Domain ticket listener:",
+          error
+        );
+
+      }
+    );
+
+}
+
+
+function renderDomainStatus(tickets) {
+
+  const box =
+    $("domainStatus");
+
+  if (!box) return;
+
+
+  if (!currentServerId) {
+
+    box.className =
+      "domain-status";
+
+    box.textContent =
+      "";
+
+    return;
+
+  }
+
+
+  const forThisServer =
+    tickets
+      .filter(
+        ticket =>
+          ticket.serverId ===
+          currentServerId
+      )
+      .sort(
+        (a, b) =>
+          Number(
+            b.createdAt || 0
+          ) -
+          Number(
+            a.createdAt || 0
+          )
+      );
+
+
+  const latest =
+    forThisServer[0];
+
+
+  if (!latest) {
+
+    box.className =
+      "domain-status";
+
+    box.textContent =
+      "";
+
+    return;
+
+  }
+
+
+  box.className =
+    `domain-status visible status-${latest.status}`;
+
+
+  if (latest.status === "failed") {
+
+    box.textContent =
+      `${latest.domain}: ${prettyDomainStatus(latest.status)}` +
+      (
+        latest.error
+          ? ` — ${latest.error}`
+          : ""
+      );
+
+  } else {
+
+    box.textContent =
+      `${latest.domain}: ${prettyDomainStatus(latest.status)}`;
+
+  }
+
 }
