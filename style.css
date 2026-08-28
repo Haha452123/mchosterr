@@ -1,4 +1,4 @@
-{
+*{
   box-sizing:border-box;
 }
 
@@ -66,7 +66,8 @@ form{
 
 input,
 select,
-button{
+button,
+textarea{
   border-radius:10px;
   border:1px solid #34425f;
   padding:11px 13px;
@@ -74,7 +75,8 @@ button{
 }
 
 input,
-select{
+select,
+textarea{
   background:#0d1425;
   color:#fff;
   width:100%;
@@ -117,6 +119,14 @@ button:disabled{
   margin-top:12px;
   min-height:20px;
   color:#ffb6bd;
+}
+
+.msg.success{
+  color:#8fe3a8;
+}
+
+.msg.warning{
+  color:#ffd479;
 }
 
 .hidden{
@@ -172,6 +182,11 @@ pre{
   gap:10px;
 }
 
+.filehint{
+  margin-top:8px;
+  font-size:12.5px;
+}
+
 .files{
   margin-top:12px;
 }
@@ -179,6 +194,12 @@ pre{
 .file{
   padding:10px;
   border-bottom:1px solid #26334f;
+  cursor:pointer;
+  border-radius:8px;
+}
+
+.file:hover{
+  background:#1b2740;
 }
 
 .dialog{
@@ -192,6 +213,42 @@ pre{
 
 dialog::backdrop{
   background:#0008;
+}
+
+
+/* ============================================================
+   FILE VIEWER
+   ============================================================ */
+
+.fileviewer{
+  margin-top:14px;
+  padding:16px;
+  background:#0d1425;
+  border:1px solid #26334f;
+  border-radius:12px;
+}
+
+.filepath{
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  word-break:break-all;
+}
+
+.filecontent{
+  margin-top:12px;
+  min-height:240px;
+  resize:vertical;
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:13.5px;
+  line-height:1.5;
+  white-space:pre;
+}
+
+.filecontent:disabled{
+  opacity:.6;
+}
+
+.fileviewer .row.end{
+  margin-top:12px;
 }
 
 
@@ -325,6 +382,61 @@ dialog::backdrop{
 
 
 /* ============================================================
+   CUSTOM DOMAIN
+   ============================================================ */
+
+.domain-box{
+  margin-top:12px;
+  padding:16px;
+  background:#0d1425;
+  border:1px solid #26334f;
+  border-radius:12px;
+}
+
+.domain-form{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:10px;
+}
+
+.domain-status{
+  margin-top:6px;
+  padding:12px;
+  border-radius:10px;
+  background:#121a2d;
+  border:1px solid #26334f;
+  color:#dbe7ff;
+  font-size:13.5px;
+  display:none;
+}
+
+.domain-status.visible{
+  display:block;
+}
+
+.domain-status.status-waiting_for_verification{
+  border-color:#5a4a20;
+  color:#ffd479;
+}
+
+.domain-status.status-queued,
+.domain-status.status-processing{
+  border-color:#20395a;
+  color:#83b7ff;
+}
+
+.domain-status.status-completed{
+  border-color:#204a2c;
+  color:#8fe3a8;
+}
+
+.domain-status.status-failed{
+  border-color:#5a2030;
+  color:#ffb6bd;
+}
+
+
+/* ============================================================
    MOBILE
    ============================================================ */
 
@@ -364,6 +476,10 @@ dialog::backdrop{
 
   .modrinth-actions > *{
     flex:1;
+  }
+
+  .domain-form{
+    grid-template-columns:1fr;
   }
 
 }
