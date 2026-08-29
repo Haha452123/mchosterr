@@ -1,420 +1,45 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="google-site-verification" content="hrXsJ8WrebP8nUdr_v8ZY9fdGAsif9a8K7-X0FVvJvs" />
-  <title>LocalNode</title>
-  <link rel="stylesheet" href="./style.css">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FreeMCHosting — LocalNode</title>
+<meta name="description" content="Free Minecraft server hosting with server management, plugins, files, queueing and support.">
+<link rel="stylesheet" href="style.css">
 </head>
- 
 <body>
-<main class="wrap">
-
-  <header class="top">
-    <div>
-      <div class="brand">LocalNode</div>
-      <div class="muted">Minecraft Hosting</div>
-    </div>
-
-    <button id="logout" class="secondary hidden">
-      Log out
-    </button>
-  </header>
-
-  <!-- AUTH -->
-
-  <section id="auth" class="card auth">
-
-    <h1 id="authTitle">Sign in</h1>
-
-    <p class="muted">
-      Manage your Minecraft servers.
-    </p>
-
-    <form id="authForm">
-
-      <input
-        id="email"
-        type="email"
-        placeholder="Email"
-        required
-      >
-
-      <input
-        id="password"
-        type="password"
-        placeholder="Password"
-        minlength="6"
-        required
-      >
-
-      <button id="authSubmit" type="submit">
-        Sign in
-      </button>
-
-    </form>
-
-    <button id="toggleAuth" class="linkbtn">
-      Need an account? Register
-    </button>
-
-    <div id="authMsg" class="msg"></div>
-
-  </section>
-
-
-  <!-- APP -->
-
-  <section id="app" class="hidden">
-
-    <div class="row between">
-
-      <div>
-        <h1>Dashboard</h1>
-        <div id="who" class="muted"></div>
-      </div>
-
-      <button id="newServer">
-        + Create server
-      </button>
-
-    </div>
-
-
-    <div id="servers" class="grid"></div>
-
-
-    <!-- SERVER -->
-
-    <section id="serverPanel" class="card hidden">
-
-      <div class="row between">
-
-        <div>
-          <h2 id="serverName">Server</h2>
-
-          <div
-            id="serverAddress"
-            class="muted"
-          >
-            Not online
-          </div>
-        </div>
-
-        <span
-          id="serverStatus"
-          class="pill"
-        >
-          offline
-        </span>
-
-      </div>
-
-
-      <div class="actions">
-
-        <button data-action="start">
-          Start
-        </button>
-
-        <button data-action="restart">
-          Restart
-        </button>
-
-        <button
-          data-action="stop"
-          class="danger"
-        >
-          Stop
-        </button>
-
-      </div>
-
-
-      <!-- CONSOLE -->
-
-      <h3>Console</h3>
-
-      <pre id="console" class="console">Waiting for the hosting agent…</pre>
-
-
-      <!-- COMMAND LINE -->
-
-      <h3>Command line</h3>
-
-      <form id="commandForm" class="commandbar">
-
-        <input
-          id="commandInput"
-          placeholder="say Hello"
-          maxlength="1000"
-          autocomplete="off"
-          required
-        >
-
-        <button type="submit">
-          Send
-        </button>
-
-      </form>
-
-      <div id="commandMsg" class="msg"></div>
-
-
-      <!-- FILES -->
-
-      <h3>Files</h3>
-
-      <div class="filebar">
-
-        <input
-          id="filePath"
-          placeholder="server.properties"
-        >
-
-        <button
-          id="openFilePathButton"
-          class="secondary"
-          type="button"
-        >
-          Open
-        </button>
-
-        <button
-          id="refreshFiles"
-          class="secondary"
-          type="button"
-        >
-          Refresh
-        </button>
-
-      </div>
-
-      <div class="muted filehint">
-        Type a path above and click Open to view or create a file
-        (even one not shown in the list yet).
-      </div>
-
-      <div id="files" class="files"></div>
-
-      <!-- FILE VIEWER / EDITOR -->
-
-      <div id="fileViewer" class="fileviewer hidden">
-
-        <div class="row between">
-          <div id="fileViewerPath" class="muted filepath">
-            filename
-          </div>
-
-          <button
-            id="closeFileViewer"
-            class="secondary"
-            type="button"
-          >
-            Close
-          </button>
-        </div>
-
-        <textarea
-          id="fileContent"
-          class="filecontent"
-          spellcheck="false"
-        ></textarea>
-
-        <div class="row end">
-          <button
-            id="saveFileButton"
-            type="button"
-          >
-            Save
-          </button>
-        </div>
-
-        <div id="fileViewerMsg" class="msg"></div>
-
-      </div>
-
-
-      <!-- MODRINTH -->
-
-      <h3>Paper Plugins</h3>
-
-      <div class="modrinth-box">
-
-        <p class="muted modrinth-help">
-          Search Modrinth for Paper plugins compatible
-          with this Minecraft server.
-        </p>
-
-        <form
-          id="modrinthSearchForm"
-          class="modrinth-search"
-        >
-
-          <input
-            id="modrinthSearch"
-            type="search"
-            placeholder="Search Paper plugins..."
-            autocomplete="off"
-            required
-          >
-
-          <select id="modrinthVersion">
-
-            <option value="1.21.11">
-              Minecraft 1.21.11
-            </option>
-
-            <option value="1.21.10">
-              Minecraft 1.21.10
-            </option>
-
-          </select>
-
-          <button type="submit">
-            Search
-          </button>
-
-        </form>
-
-        <div
-          id="modrinthMsg"
-          class="msg"
-        ></div>
-
-        <div
-          id="modrinthResults"
-          class="modrinth-results"
-        >
-
-          <div class="modrinth-empty muted">
-            Search for a plugin to get started.
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- CUSTOM DOMAIN -->
-
-      <h3>Custom Domain</h3>
-
-      <div class="domain-box">
-
-        <p class="muted modrinth-help">
-          Point your own domain at this server. Submitting a
-          request opens a verification ticket — you'll need to
-          confirm ownership in our Discord server before it goes
-          live.
-        </p>
-
-        <form
-          id="domainForm"
-          class="domain-form"
-        >
-
-          <input
-            id="domainInput"
-            type="text"
-            placeholder="mc.example.com"
-            autocomplete="off"
-            required
-          >
-
-          <button id="domainSubmit" type="submit">
-            Request
-          </button>
-
-        </form>
-
-        <div id="domainMsg" class="msg"></div>
-
-        <div id="domainStatus" class="domain-status"></div>
-
-      </div>
-
-    </section>
-
-  </section>
-
+<div id="authOverlay" class="overlay"><div class="auth-card">
+  <h1>🖥️ FreeMCHosting</h1><p id="authSubtitle">Sign in to manage your Minecraft servers.</p>
+  <div id="authError" class="error"></div>
+  <input id="authEmail" type="email" placeholder="Email">
+  <input id="authPassword" type="password" placeholder="Password">
+  <button id="authBtn" class="primary">Sign In</button>
+  <div id="authSwitch" class="muted">Don't have an account? <button class="link" onclick="toggleAuthMode()">Sign up</button></div>
+</div></div>
+<header>
+ <div class="brand">🖥️ FreeMCHosting <span id="statusDot" class="dot"></span></div>
+ <div class="account"><span id="userEmail"></span><button onclick="signOutUser()">Logout</button></div>
+</header>
+<div class="tabs" id="serverTabs"><button class="tab active" data-tab="global">🌐 Global</button></div>
+<main>
+<section id="globalPanel" class="panel active">
+ <div class="grid two">
+  <div class="card"><div class="section-head"><h2>Global Chat</h2><span class="muted">Live</span></div><div id="chatMessages" class="chat"></div><div class="chat-row"><input id="chatInput" maxlength="500" placeholder="Message everyone..."><button onclick="sendChat()" class="primary">Send</button></div></div>
+  <div class="card"><div class="section-head"><h2>Hosting Queue</h2><span id="queueCount" class="pill">0</span></div><div id="queueList" class="queue"></div></div>
+ </div>
+ <div class="card"><div class="section-head"><h2>Notifications</h2></div><div id="notifications" class="queue"><div class="muted">No notifications.</div></div></div>
+</section>
+<section id="serverPanel" class="panel"><div id="serverHeader" class="server-header"></div><div class="subtabs" id="serverSubtabs">
+ <button class="subtab active" data-sub="console">Console</button><button class="subtab" data-sub="files">Files</button><button class="subtab" data-sub="plugins">Plugins</button><button class="subtab" data-sub="domains">Domains</button><button class="subtab" data-sub="support">Support</button>
+ </div>
+ <div id="sub-console" class="subpanel active"><div class="grid console-grid"><div class="card"><div class="section-head"><h3>Console</h3><span id="serverStatus" class="pill">Offline</span></div><pre id="consoleOutput" class="console"></pre><div class="chat-row"><input id="commandInput" placeholder="Type a server command..."><button onclick="sendCommand()" class="primary">Send</button></div></div><div class="card"><h3>Server Controls</h3><div class="actions"><button onclick="serverAction('start')">▶ Start</button><button onclick="serverAction('stop')">⏹ Stop</button><button onclick="serverAction('restart')">↻ Restart</button></div><div id="connectBox" class="connect"></div><div id="queueInfo" class="notice"></div></div></div></div>
+ <div id="sub-files" class="subpanel"><div class="card"><div class="section-head"><h3>Files</h3><button onclick="loadFiles()">↻ Refresh</button></div><div id="filePath" class="breadcrumb">/</div><div id="fileList" class="file-list"></div><div class="file-upload"><input id="fileUpload" type="file"><button onclick="uploadFile()">Upload</button></div></div></div>
+ <div id="sub-plugins" class="subpanel"><div class="card"><div class="section-head"><h3>Paper Plugins</h3><span class="pill">Strict compatibility</span></div><div class="plugin-search"><input id="pluginSearch" placeholder="Search plugins..."><button onclick="searchPlugins()" class="primary">Search</button></div><div class="muted small">Only Modrinth projects categorized as plugins with a compatible Paper/Spigot/Bukkit/Purpur/Folia release for this server's Minecraft version are shown.</div><div id="pluginResults" class="plugin-grid"></div></div></div>
+ <div id="sub-domains" class="subpanel"><div class="card"><h3>Custom Domain</h3><div class="chat-row"><input id="domainInput" placeholder="play.example.com"><button onclick="addDomain()">Add</button></div><div id="domainList" class="queue"></div></div></div>
+ <div id="sub-support" class="subpanel"><div class="card"><h3>Support Ticket</h3><p class="muted">Submit a ticket here. For domain verification, complete your Discord verification step yourself. Your ticket stays <code>pending_verification</code> until an admin changes it to <code>queued</code>.</p><input id="ticketSubject" placeholder="Subject"><textarea id="ticketMessage" placeholder="Describe the issue..."></textarea><label><input id="ticketNeedsVerification" type="checkbox"> This ticket needs domain verification</label><input id="ticketDomain" placeholder="play.example.com"><button onclick="submitTicket()" class="primary">Submit ticket</button><div id="ticketResult"></div><div id="ticketList" class="queue"></div></div></div>
+ </section>
+<section id="adminPanel" class="panel"><div class="section-head"><h2>🛡️ Admin Panel</h2><span id="adminBadge" class="pill">Admin</span></div><div class="card"><input id="adminSearch" placeholder="Search all servers..." oninput="renderAdminServers()"><div id="adminServers" class="admin-table"></div></div><div class="card"><h3>Moderation Alerts</h3><div id="adminAlerts" class="queue"></div></div></section>
+<section id="serversPanel" class="panel"><div class="section-head"><h2>Your Servers</h2><button onclick="openCreate()" class="primary">+ New Server</button></div><div id="serverCards" class="server-grid"></div></section>
 </main>
-
-
-<!-- CREATE SERVER -->
-
-<dialog id="createDialog">
-
-  <form
-    method="dialog"
-    id="createForm"
-    class="dialog"
-  >
-
-    <h2>Create Minecraft server</h2>
-
-    <input
-      id="serverNameInput"
-      placeholder="Server name"
-      maxlength="32"
-      required
-    >
-
-    <select id="versionInput">
-
-      <option value="1.21.11">
-        Minecraft 1.21.11
-      </option>
-
-      <option value="1.21.10">
-        Minecraft 1.21.10
-      </option>
-
-    </select>
-
-
-    <select id="ramInput">
-
-      <option value="1024">
-        1 GB RAM
-      </option>
-
-      <option value="2048">
-        2 GB RAM
-      </option>
-
-      <option value="3072">
-        3 GB RAM
-      </option>
-
-    </select>
-
-
-    <div id="ramNotice" class="msg"></div>
-
-
-    <div class="row end">
-
-      <button
-        value="cancel"
-        class="secondary"
-      >
-        Cancel
-      </button>
-
-      <button id="createServerButton">
-        Create
-      </button>
-
-    </div>
-
-  </form>
-
-</dialog>
-
-
-<script type="module" src="./app.js"></script>
-
-</body>
-</html>
+<div id="createModal" class="overlay hidden"><div class="modal"><h2>Create Server</h2><input id="newName" placeholder="Server name"><select id="newVersion"><option>1.21.11</option></select><select id="newRam"><option value="1024">1 GB</option><option value="2048">2 GB</option><option value="3072">3 GB</option></select><div class="actions"><button onclick="closeCreate()">Cancel</button><button onclick="createServer()" class="primary">Queue Server</button></div></div></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script><script src="app.js"></script>
+</body></html>
