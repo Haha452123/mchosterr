@@ -41,7 +41,6 @@ let chatUnsub = null;
 let serversUnsub = null;
 let queueUnsub = null;
 let notifyUnsub = null;
-let modrinthSearchUnsub = null;
 
 let adminServers = [];
 
