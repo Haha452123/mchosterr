@@ -18,7 +18,7 @@ const FREE_RAM_LIMIT = 3072;
 
 // Put your Firebase Auth UID here if you want admin access.
 const ADMIN_UIDS = [
-"2QWQ0Z6HQMVrePmd0yr1aRKeRQ43"
+""
 ];
 
 const MODRINTH_API = "https://api.modrinth.com/v2";
