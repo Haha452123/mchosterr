@@ -1,10 +1,10 @@
 const firebaseConfig = {
-apiKey: "AIzaSyAew9fVw91DarhE9mUUIy2VZ2sCVxrAX44",
-authDomain: "mchost-9516b.firebaseapp.com",
-projectId: "mchost-9516b",
-storageBucket: "mchost-9516b.firebasestorage.app",
-messagingSenderId: "692774609042",
-appId: "1:692774609042:web:dd447dc87803450d22864b"
+  apiKey: "AIzaSyAew9fVw91DarhE9mUUIy2VZ2sCVxrAX44",
+  authDomain: "mchost-9516b.firebaseapp.com",
+  projectId: "mchost-9516b",
+  storageBucket: "mchost-9516b.firebasestorage.app",
+  messagingSenderId: "692774609042",
+  appId: "1:692774609042:web:dd447dc87803450d22864b"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -16,22 +16,21 @@ const HOSTNAME = "freemchosting.vexr.dev";
 const MAX_SERVERS = 1;
 const FREE_RAM_LIMIT = 3072;
 
-// Put your Firebase Auth UID here if you want admin access.
 const ADMIN_UIDS = [
-"REPLACE_WITH_ADMIN_UID"
+  "REPLACE_WITH_ADMIN_UID"
 ];
 
 const MODRINTH_API = "https://api.modrinth.com/v2";
 
 const MODRINTH_HEADERS = {
-"Accept": "application/json",
-"User-Agent": "FreeMCHosting/1.0 (https://freemchosting.vexr.dev)"
+  "Accept": "application/json",
+  "User-Agent": "FreeMCHosting/1.0 (https://freemchosting.vexr.dev)"
 };
 
 let currentUser = null;
 let servers = [];
 let selectedServer =
-localStorage.getItem("localnode.selectedServer") || null;
+  localStorage.getItem("localnode.selectedServer") || null;
 
 let activeServer = null;
 
@@ -47,16 +46,16 @@ let registerMode = false;
 const $ = id => document.getElementById(id);
 
 const esc = value =>
-String(value ?? "").replace(
-/[&<>"']/g,
-c => ({
-"&": "&",
-"<": "<",
-">": ">",
-'"': """,
-"'": "'"
-}[c])
-);
+  String(value ?? "").replace(
+    /[&<>"']/g,
+    c => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[c])
+  );
 
 // ============================================================
 // AUTH
