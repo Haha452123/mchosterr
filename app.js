@@ -72,10 +72,10 @@ registerMode
 ? "Create your account."
 : "Sign in to manage your Minecraft servers.";
 
-$("authSwitch").innerHTML =
-registerMode
-? 'Already have an account? <button class="link" onclick="toggleAuthMode()">Sign in</button>'
-: 'Don't have an account? <button class="link" onclick="toggleAuthMode()">Sign up</button>';
+  $("authSwitch").innerHTML =
+    registerMode
+      ? 'Already have an account? <button class="link" onclick="toggleAuthMode()">Sign in</button>'
+      : 'Don\'t have an account? <button class="link" onclick="toggleAuthMode()">Sign up</button>';
 }
 
 $("authBtn").onclick = async () => {
