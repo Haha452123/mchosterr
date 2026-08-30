@@ -17,7 +17,7 @@ const MAX_SERVERS = 1;
 const FREE_RAM_LIMIT = 3072;
 
 const ADMIN_UIDS = [
-  "REPLACE_WITH_ADMIN_UID"
+  "2QWQ0Z6HQMVrePmd0yr1aRKeRQ43"
 ];
 
 const MODRINTH_API = "https://api.modrinth.com/v2";
